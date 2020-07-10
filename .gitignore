@@ -1,0 +1,16 @@
+/vendor
+/bin
+/.libs
+/.gopath
+/.vscode
+/dist
+/test/tests.*
+/golint.txt
+/govet.txt
+/python/build
+/autom4te.cache/
+/config.*
+/configure
+/Makefile
+/3rdparty-LICENSES.md
+/aclocal.m4
