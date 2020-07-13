@@ -10,6 +10,7 @@
 /python/build
 /autom4te.cache/
 /config.*
+!/config.go
 /configure
 /Makefile
 /3rdparty-LICENSES.md

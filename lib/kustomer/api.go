@@ -7,14 +7,34 @@ package main
 
 /*
 #define KUSTOMER_API 1
-#define KUSTOMER_API_MINOR 1
+#define KUSTOMER_API_MINOR 0
 
 #define KUSTOMER_VERSION (KUSTOMER_API * 10000 + KUSTOMER_API_MINOR * 100)
 
 */
 import "C"
 
-//export kustomer_available
-func kustomer_available() C.int {
-	return 1
+import (
+	"context"
+
+	"stash.kopano.io/kc/libkustomer"
+)
+
+//export kustomer_initialize
+func kustomer_initialize(productNameCString *C.char) C.ulonglong {
+	err := Initialize(context.Background(), C.GoString(productNameCString))
+	if err != nil {
+		asKnownErrorOrUnknown(err)
+	}
+
+	return kustomer.StatusSuccess
+}
+
+//export kustomer_uninitialize
+func kustomer_uninitialize() C.ulonglong {
+	err := Uninitialize()
+	if err != nil {
+		return asKnownErrorOrUnknown(err)
+	}
+	return kustomer.StatusSuccess
 }
