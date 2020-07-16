@@ -66,7 +66,7 @@ func New(config *Config) (*Kustomer, error) {
 		currentKopanoProductClaims: &api.ClaimsKopanoProductsResponse{
 			Trusted:  false,
 			Offline:  true,
-			Products: make(map[string]api.ClaimsKopanoProductsResponseProduct),
+			Products: make(map[string]*api.ClaimsKopanoProductsResponseProduct),
 		},
 	}
 
@@ -353,6 +353,10 @@ func (k *Kustomer) WaitUntilReady(ctx context.Context, timeout time.Duration) er
 	return err
 }
 
-func (k *Kustomer) CurrentKopanoProductClaims() *api.ClaimsKopanoProductsResponse {
-	return k.currentKopanoProductClaims
+func (k *Kustomer) CurrentKopanoProductClaims() *KopanoProductClaims {
+	k.mutex.RLock()
+	defer k.mutex.RUnlock()
+	return &KopanoProductClaims{
+		response: k.currentKopanoProductClaims,
+	}
 }

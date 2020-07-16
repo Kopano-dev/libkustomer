@@ -14,7 +14,7 @@ import (
 
 func asKnownErrorOrUnknown(err error) C.ulonglong {
 	switch e := err.(type) {
-	case kustomer.ErrStatus:
+	case kustomer.ErrNumeric:
 		return C.ulonglong(e)
 	default:
 		if debug {
