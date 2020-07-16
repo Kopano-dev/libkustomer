@@ -25,7 +25,7 @@ import (
 func kustomer_initialize(productNameCString *C.char) C.ulonglong {
 	err := Initialize(context.Background(), C.GoString(productNameCString))
 	if err != nil {
-		asKnownErrorOrUnknown(err)
+		return asKnownErrorOrUnknown(err)
 	}
 
 	return kustomer.StatusSuccess

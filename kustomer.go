@@ -320,6 +320,7 @@ func (k *Kustomer) WaitUntilReady(ctx context.Context) error {
 	select {
 	case <-ready:
 	case <-ctx.Done():
+		err = ctx.Err()
 	case <-initializeCtx.Done():
 		err = initializeCtx.Err()
 	}
@@ -343,7 +344,7 @@ func (k *Kustomer) NotifyWhenUpdated(ctx context.Context, eventCh chan<- bool) e
 			case <-updated:
 				eventCh <- true
 			case <-ctx.Done():
-				return nil
+				return ctx.Err()
 			case <-initializeCtx.Done():
 				return initializeCtx.Err()
 			}

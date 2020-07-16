@@ -7,6 +7,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -105,9 +106,6 @@ func WaitUntilReady(timeout time.Duration) error {
 	var err error
 	if debug {
 		fmt.Println("kustomer-c waiting until ready")
-		defer func() {
-			fmt.Printf("kustomer-c finished waiting until ready: %v\n", err)
-		}()
 	}
 
 	if k == nil {
@@ -116,6 +114,12 @@ func WaitUntilReady(timeout time.Duration) error {
 		timeoutCtx, timeoutCtxCancel := context.WithTimeout(ctx, timeout)
 		err = k.WaitUntilReady(timeoutCtx)
 		timeoutCtxCancel()
+		if errors.Is(err, context.DeadlineExceeded) {
+			err = kustomer.ErrStatusTimeout
+		}
+	}
+	if debug {
+		fmt.Printf("kustomer-c finished waiting until ready: %v\n", err)
 	}
 
 	return err
