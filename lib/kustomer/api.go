@@ -16,6 +16,7 @@ import "C"
 
 import (
 	"context"
+	"time"
 
 	"stash.kopano.io/kc/libkustomer"
 )
@@ -33,6 +34,15 @@ func kustomer_initialize(productNameCString *C.char) C.ulonglong {
 //export kustomer_uninitialize
 func kustomer_uninitialize() C.ulonglong {
 	err := Uninitialize()
+	if err != nil {
+		return asKnownErrorOrUnknown(err)
+	}
+	return kustomer.StatusSuccess
+}
+
+//export kustomer_wait_until_ready
+func kustomer_wait_until_ready(timeout C.ulonglong) C.ulonglong {
+	err := WaitUntilReady(time.Duration(timeout) * time.Second)
 	if err != nil {
 		return asKnownErrorOrUnknown(err)
 	}
