@@ -45,6 +45,7 @@ type Kustomer struct {
 	version   string
 	buildDate string
 
+	updated                    chan struct{}
 	currentKopanoProductClaims *api.ClaimsKopanoProductsResponse
 }
 
@@ -63,6 +64,7 @@ func New(config *Config) (*Kustomer, error) {
 		version:   version.Version,
 		buildDate: version.BuildDate,
 
+		updated: make(chan struct{}),
 		currentKopanoProductClaims: &api.ClaimsKopanoProductsResponse{
 			Trusted:  false,
 			Offline:  true,
@@ -227,7 +229,10 @@ func (k *Kustomer) Initialize(ctx context.Context, productName *string) error {
 			}
 			k.mutex.RUnlock()
 
-			if autoRefresh {
+			if autoRefresh && first {
+				// If auto refresh is turned on, the first run is delayed until
+				// the auto refresh watcher is ready. This avoids double fetch
+				// on startup.
 				select {
 				case <-initializeCtx.Done():
 					return
@@ -294,17 +299,22 @@ func (k *Kustomer) Initialize(ctx context.Context, productName *string) error {
 			if kopanoProductClaims != nil {
 				k.mutex.Lock()
 				k.currentKopanoProductClaims = kopanoProductClaims
+				updated := k.updated
+				k.updated = make(chan struct{})
+				close(updated)
 				k.mutex.Unlock()
 			}
 
 			if first {
+				// If this is the first run, signal that operation is ready.
 				first = false
 				close(ready)
 			}
 			if !autoRefresh {
+				// No auto refresh, exit here directly.
 				return
 			}
-
+			// Wait for signal to run again or to exit.
 			select {
 			case <-initializeCtx.Done():
 				return
@@ -330,7 +340,7 @@ func (k *Kustomer) Uninitialize() error {
 	return nil
 }
 
-func (k *Kustomer) WaitUntilReady(ctx context.Context, timeout time.Duration) error {
+func (k *Kustomer) WaitUntilReady(ctx context.Context) error {
 	k.mutex.RLock()
 	if !k.initialized {
 		k.mutex.RUnlock()
@@ -346,10 +356,33 @@ func (k *Kustomer) WaitUntilReady(ctx context.Context, timeout time.Duration) er
 	case <-ctx.Done():
 	case <-initializeCtx.Done():
 		err = initializeCtx.Err()
-	case <-time.After(timeout):
-		err = ErrStatusTimeout
 	}
 
+	return err
+}
+
+func (k *Kustomer) NotifyWhenUpdated(ctx context.Context, eventCh chan<- bool) error {
+	err := func() error {
+		for {
+			k.mutex.RLock()
+			if !k.initialized {
+				k.mutex.RUnlock()
+				return ErrStatusNotInitialized
+			}
+			updated := k.updated
+			initializeCtx := k.ctx
+			k.mutex.RUnlock()
+
+			select {
+			case <-updated:
+				eventCh <- true
+			case <-ctx.Done():
+				return nil
+			case <-initializeCtx.Done():
+				return initializeCtx.Err()
+			}
+		}
+	}()
 	return err
 }
 

@@ -7,6 +7,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -40,14 +41,42 @@ func main() {
 	fmt.Printf("Initialized, library version: %s\n", k.Version())
 
 	fmt.Println("Waiting until ready ...")
-	err = k.WaitUntilReady(ctx, 30*time.Second)
-	if err != nil {
+	updateCh := make(chan bool)
+	errCh := make(chan error)
+	go func() {
+		notifyErr := k.NotifyWhenUpdated(ctx, updateCh)
+		errCh <- notifyErr
+	}()
+
+	select {
+	case <-updateCh:
+	case err = <-errCh:
 		panic(err)
+	case <-time.After(30 * time.Second):
+		panic("timeout waiting for first update")
 	}
-	fmt.Println("Ready.")
+	fmt.Println("Ready:")
+	dumpAsJSON(k.CurrentKopanoProductClaims().Dump())
+
+	go func() {
+		for v := range updateCh {
+			fmt.Println("Claims have been updated:", v)
+			dumpAsJSON(k.CurrentKopanoProductClaims().Dump())
+		}
+	}()
 
 	fmt.Println("\nPress CTRL+C to exit.")
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)
 	<-signalCh
+}
+
+func dumpAsJSON(v interface{}) error {
+	b, err := json.MarshalIndent(v, "", "\t")
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(string(b))
+	return nil
 }

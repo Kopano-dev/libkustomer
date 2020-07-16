@@ -27,6 +27,14 @@ type KopanoProductClaims struct {
 	allowUntrusted bool
 }
 
+func (kpc *KopanoProductClaims) Dump() map[string]interface{} {
+	return map[string]interface{}{
+		"mustBeOnline":   kpc.mustBeOnline,
+		"allowUntrusted": kpc.allowUntrusted,
+		"payload":        kpc.response,
+	}
+}
+
 func (kpc *KopanoProductClaims) MustBeOnline(flag bool) {
 	kpc.mustBeOnline = flag
 }
