@@ -19,7 +19,7 @@ import (
 )
 
 func main() {
-	logger := log.New(os.Stderr, "", log.Lshortfile)
+	logger := log.New(os.Stderr, "Log: ", 0)
 
 	k, err := kustomer.New(&kustomer.Config{
 		Logger:      logger,
@@ -55,15 +55,18 @@ func main() {
 	case <-time.After(30 * time.Second):
 		panic("timeout waiting for first update")
 	}
-	fmt.Println("Ready:")
-	dumpAsJSON(k.CurrentKopanoProductClaims().Dump())
+	fmt.Println("Ready with aggregated claims:")
+	dumpAsJSON(k.CurrentKopanoProductClaims(ctx).Dump())
 
 	go func() {
 		for v := range updateCh {
 			fmt.Println("Claims have been updated:", v)
-			dumpAsJSON(k.CurrentKopanoProductClaims().Dump())
+			dumpAsJSON(k.CurrentKopanoProductClaims(ctx).Dump())
 		}
 	}()
+
+	fmt.Println("Claims active on load:")
+	dumpAsJSON(k.CurrentClaims(ctx).Dump())
 
 	fmt.Println("\nPress CTRL+C to exit.")
 	signalCh := make(chan os.Signal, 1)

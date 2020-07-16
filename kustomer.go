@@ -47,6 +47,9 @@ type Kustomer struct {
 
 	updated                    chan struct{}
 	currentKopanoProductClaims *api.ClaimsKopanoProductsResponse
+
+	fetching      chan struct{}
+	currentClaims *api.ClaimsResponse
 }
 
 func New(config *Config) (*Kustomer, error) {
@@ -69,6 +72,18 @@ func New(config *Config) (*Kustomer, error) {
 			Trusted:  false,
 			Offline:  true,
 			Products: make(map[string]*api.ClaimsKopanoProductsResponseProduct),
+		},
+	}
+
+	var dialer net.Dialer
+	k.httpClient = &http.Client{
+		Transport: &http.Transport{
+			DialContext: func(ctx context.Context, proto, addr string) (conn net.Conn, err error) {
+				if k.initialized == false {
+					return nil, fmt.Errorf("cannot dial to API: %w", ErrStatusNotInitialized)
+				}
+				return dialer.DialContext(ctx, "unix", k.apiPath)
+			},
 		},
 	}
 
@@ -118,19 +133,6 @@ func (k *Kustomer) Initialize(ctx context.Context, productName *string) error {
 		k.logger.Printf("kustomer initializing with %s (trusted: %v)\n", k.apiPath, k.trusted)
 	}
 
-	var dialer net.Dialer
-	httpClient := &http.Client{
-		Transport: &http.Transport{
-			DialContext: func(ctx context.Context, proto, addr string) (conn net.Conn, err error) {
-				if k.initialized == false {
-					return nil, fmt.Errorf("cannot dial to API: %w", ErrStatusNotInitialized)
-				}
-				return dialer.DialContext(ctx, "unix", k.apiPath)
-			},
-		},
-	}
-	k.httpClient = httpClient
-
 	go func() {
 		k.mutex.RLock()
 		debug := k.debug
@@ -158,7 +160,7 @@ func (k *Kustomer) Initialize(ctx context.Context, productName *string) error {
 					if debug {
 						logger.Printf("libkustomer claims watch start\n")
 					}
-					err := sse.Notify(uri.String(), httpClient, newRequestWithUserAgent, c)
+					err := sse.Notify(uri.String(), k.httpClient, newRequestWithUserAgent, c)
 					e <- err
 				}()
 
@@ -219,15 +221,16 @@ func (k *Kustomer) Initialize(ctx context.Context, productName *string) error {
 	go func() {
 		var first = true
 		for {
-			k.mutex.RLock()
+			k.mutex.Lock()
 			debug := k.debug
 			logger := k.logger
 			autoRefresh := k.autoRefresh
 			if k.ready != ready || !k.initialized {
-				k.mutex.RUnlock()
+				k.mutex.Unlock()
 				return
 			}
-			k.mutex.RUnlock()
+			k.currentClaims = nil // Always reset any loaded claims before we refresh.
+			k.mutex.Unlock()
 
 			if autoRefresh && first {
 				// If auto refresh is turned on, the first run is delayed until
@@ -241,46 +244,9 @@ func (k *Kustomer) Initialize(ctx context.Context, productName *string) error {
 				}
 			}
 
-			kopanoProductClaims, err := func() (*api.ClaimsKopanoProductsResponse, error) {
-				uri := url.URL{
-					Scheme: "http",
-					Host:   "localhost",
-					Path:   "/api/v1/claims/kopano/products",
-				}
-				query := uri.Query()
-				if productName != nil {
-					query.Set("product", *productName)
-				}
-				uri.RawQuery = query.Encode()
-
-				request, err := newRequestWithUserAgent(http.MethodGet, uri.String(), nil)
-				if err != nil {
-					return nil, fmt.Errorf("API request could not be created: %w", err)
-				}
-
-				timeoutContext, timeoutContextCancel := context.WithTimeout(k.ctx, 60*time.Second)
-				defer timeoutContextCancel()
-				request = request.WithContext(timeoutContext)
-
-				response, err := httpClient.Do(request)
-				if err != nil {
-					return nil, fmt.Errorf("API request failed: %w", err)
-				}
-				defer response.Body.Close()
-				if response.StatusCode != http.StatusOK {
-					bodyBytes, _ := ioutil.ReadAll(response.Body)
-					return nil, fmt.Errorf("API request failed with status: %v (%v)", response.StatusCode, string(bodyBytes))
-				}
-
-				kpc := &api.ClaimsKopanoProductsResponse{}
-				err = json.NewDecoder(response.Body).Decode(kpc)
-				if err != nil {
-					return nil, fmt.Errorf("API response parse error: %w", err)
-				}
-
-				return kpc, nil
-			}()
-
+			timeoutContext, timeoutContextCancel := context.WithTimeout(k.ctx, 60*time.Second)
+			kopanoProductClaims, err := k.fetchClaimsKopanoProducts(timeoutContext, productName)
+			timeoutContextCancel()
 			if err != nil {
 				if debug {
 					logger.Printf("libkustomer fetch error: %v\n", err.Error())
@@ -386,10 +352,128 @@ func (k *Kustomer) NotifyWhenUpdated(ctx context.Context, eventCh chan<- bool) e
 	return err
 }
 
-func (k *Kustomer) CurrentKopanoProductClaims() *KopanoProductClaims {
+func (k *Kustomer) fetchClaimsKopanoProducts(ctx context.Context, productName *string) (*api.ClaimsKopanoProductsResponse, error) {
+	uri := url.URL{
+		Scheme: "http",
+		Host:   "localhost",
+		Path:   "/api/v1/claims/kopano/products",
+	}
+	query := uri.Query()
+	if productName != nil {
+		query.Set("product", *productName)
+	}
+	uri.RawQuery = query.Encode()
+
+	request, err := newRequestWithUserAgent(http.MethodGet, uri.String(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("API request could not be created: %w", err)
+	}
+
+	request = request.WithContext(ctx)
+
+	response, err := k.httpClient.Do(request)
+	if err != nil {
+		return nil, fmt.Errorf("API request failed: %w", err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		bodyBytes, _ := ioutil.ReadAll(response.Body)
+		return nil, fmt.Errorf("API request failed with status: %v (%v)", response.StatusCode, string(bodyBytes))
+	}
+
+	kpc := &api.ClaimsKopanoProductsResponse{}
+	err = json.NewDecoder(response.Body).Decode(kpc)
+	if err != nil {
+		return nil, fmt.Errorf("API response parse error: %w", err)
+	}
+	return kpc, nil
+}
+
+func (k *Kustomer) fetchClaims(ctx context.Context) (*api.ClaimsResponse, error) {
+	uri := url.URL{
+		Scheme: "http",
+		Host:   "localhost",
+		Path:   "/api/v1/claims",
+	}
+
+	request, err := newRequestWithUserAgent(http.MethodGet, uri.String(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("API request could not be created: %w", err)
+	}
+
+	request = request.WithContext(ctx)
+
+	response, err := k.httpClient.Do(request)
+	if err != nil {
+		return nil, fmt.Errorf("API request failed: %w", err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		bodyBytes, _ := ioutil.ReadAll(response.Body)
+		return nil, fmt.Errorf("API request failed with status: %v (%v)", response.StatusCode, string(bodyBytes))
+	}
+
+	cr := &api.ClaimsResponse{}
+	err = json.NewDecoder(response.Body).Decode(cr)
+	if err != nil {
+		return nil, fmt.Errorf("API response parse error: %w", err)
+	}
+	return cr, nil
+}
+
+func (k *Kustomer) CurrentKopanoProductClaims(ctx context.Context) *KopanoProductClaims {
 	k.mutex.RLock()
 	defer k.mutex.RUnlock()
 	return &KopanoProductClaims{
 		response: k.currentKopanoProductClaims,
+	}
+}
+
+func (k *Kustomer) CurrentClaims(ctx context.Context) *Claims {
+	k.mutex.RLock()
+	claims := k.currentClaims
+	debug := k.debug
+	logger := k.logger
+	k.mutex.RUnlock()
+
+	if claims == nil {
+		k.mutex.Lock()
+		claims = k.currentClaims
+		if claims == nil {
+			fetching := k.fetching
+			if fetching == nil {
+				fetching = make(chan struct{})
+				k.fetching = fetching
+				k.mutex.Unlock()
+				var err error
+				claims, err = k.fetchClaims(ctx)
+				k.mutex.Lock()
+				k.fetching = nil
+				defer close(fetching)
+				if err == nil {
+					k.currentClaims = claims
+					k.mutex.Unlock()
+				} else {
+					k.mutex.Unlock()
+					if debug {
+						logger.Printf("libcustomer failed to fetch claims: %w\n", err)
+					}
+				}
+			} else {
+				k.mutex.Unlock()
+				select {
+				case <-fetching:
+					return k.CurrentClaims(ctx)
+				case <-ctx.Done():
+					return nil
+				}
+			}
+		} else {
+			k.mutex.Unlock()
+		}
+	}
+
+	return &Claims{
+		response: claims,
 	}
 }

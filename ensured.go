@@ -20,6 +20,16 @@ const (
 	OperatorLesserThanOrEqual  OperatorType = "le"
 )
 
+type Claims struct {
+	response *api.ClaimsResponse
+}
+
+func (c *Claims) Dump() map[string]interface{} {
+	return map[string]interface{}{
+		"payload": c.response,
+	}
+}
+
 type KopanoProductClaims struct {
 	response *api.ClaimsKopanoProductsResponse
 
