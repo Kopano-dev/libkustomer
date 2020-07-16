@@ -104,7 +104,10 @@ python: $(CDEPS)
 # Examples
 
 .PHONY: examples
-examples:
+examples: $(DST_BIN)/ensure-cpp $(CMDS)
+
+$(DST_BIN)/ensure-cpp: examples/ensure.cpp $(CLIBS)
+	$(CXX) -Wall -O3 -std=c++0x -o $@ $^ -pthread $(CFLAGS)
 
 # Helpers
 
@@ -191,6 +194,7 @@ dist: licenses ; $(info building dist tarball ...)
 	cd ..
 
 # Install
+
 .PHONY: install
 install: lib ; $(info installing ...)
 	@mkdir -p $(DESTDIR)$(libdir)
