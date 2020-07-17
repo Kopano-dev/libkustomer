@@ -102,7 +102,11 @@ func Initialize(ctx context.Context, productName *string) error {
 	instance = k
 	initializedContext, initializedContextCancel = context.WithCancel(ctx)
 	if debug {
-		initializedLogger.Printf("kustomer-c initialize success: %v\n", productName)
+		var productNameString string
+		if productName != nil {
+			productNameString = *productName
+		}
+		initializedLogger.Printf("kustomer-c initialize success: %v\n", productNameString)
 	}
 	return nil
 }
