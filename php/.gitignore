@@ -1,0 +1,8 @@
+/*
+!/.gitignore
+!/ext
+!/config.m4
+!/.clang_complete
+/ext/.libs
+/ext/*.lo
+
