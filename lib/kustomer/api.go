@@ -11,19 +11,63 @@ package main
 
 #define KUSTOMER_VERSION (KUSTOMER_API * 10000 + KUSTOMER_API_MINOR * 100)
 
+#include "callbacks.h"
 */
 import "C"
 
 import (
 	"context"
+	"encoding/json"
 	"time"
+	"unsafe"
+
+	"github.com/mattn/go-pointer"
 
 	"stash.kopano.io/kc/libkustomer"
 )
 
+//export kustomer_set_autorefresh
+func kustomer_set_autorefresh(flagCInt C.int) C.ulonglong {
+	var flag bool
+	if flagCInt != 0 {
+		flag = true
+	}
+	err := SetAutoRefresh(flag)
+	if err != nil {
+		return asKnownErrorOrUnknown(err)
+	}
+
+	return kustomer.StatusSuccess
+}
+
+//export kustomer_set_logger
+func kustomer_set_logger(cb C.kustomer_cb_func_log_s, debug C.int) C.ulonglong {
+	logger := getCLogger(cb)
+	var flag *bool
+	if debug >= 0 {
+		var f bool
+		if debug != 0 {
+			f = true
+		}
+		flag = &f
+	}
+	err := SetLogger(logger, flag)
+	if err != nil {
+		return asKnownErrorOrUnknown(err)
+	}
+
+	return kustomer.StatusSuccess
+}
+
 //export kustomer_initialize
 func kustomer_initialize(productNameCString *C.char) C.ulonglong {
-	err := Initialize(context.Background(), C.GoString(productNameCString))
+	var productName *string
+	if productNameCString != nil {
+		productNameString := C.GoString(productNameCString)
+		productName = &productNameString
+	}
+
+	err := Initialize(context.Background(), productName)
 	if err != nil {
 		return asKnownErrorOrUnknown(err)
 	}
@@ -46,5 +90,153 @@ func kustomer_wait_until_ready(timeout C.ulonglong) C.ulonglong {
 	if err != nil {
 		return asKnownErrorOrUnknown(err)
 	}
+	return kustomer.StatusSuccess
+}
+
+//export kustomer_dump_claims
+func kustomer_dump_claims() (C.ulonglong, *C.char) {
+	claims, err := CurrentClaims()
+	if err != nil {
+		return asKnownErrorOrUnknown(err), nil
+	}
+
+	b, err := json.Marshal(claims.Dump())
+	if err != nil {
+		return asKnownErrorOrUnknown(err), nil
+	}
+
+	return kustomer.StatusSuccess, C.CString(string(b))
+}
+
+//export kustomer_err_numeric_text
+func kustomer_err_numeric_text(errNum C.ulonglong) *C.char {
+	err := asErrNumeric(errNum)
+	return C.CString(ErrNumericText(err))
+}
+
+//export kustomer_begin_ensure
+func kustomer_begin_ensure() (C.ulonglong, unsafe.Pointer) {
+	kpc, err := CurrentKopanoProductClaims()
+	if err != nil {
+		return asKnownErrorOrUnknown(err), nil
+	}
+
+	ptr := pointer.Save(kpc)
+
+	return kustomer.StatusSuccess, ptr
+}
+
+//export kustomer_end_ensure
+func kustomer_end_ensure(ptr unsafe.Pointer) C.ulonglong {
+	v := pointer.Restore(ptr)
+	kpc, _ := v.(*kustomer.KopanoProductClaims)
+	if kpc == nil {
+		return asKnownErrorOrUnknown(kustomer.ErrEnsureInvalidTransaction)
+	}
+	pointer.Unref(ptr)
+
+	return kustomer.StatusSuccess
+}
+
+func restoreKopanoProductClaimsFromPointer(ptr unsafe.Pointer) *kustomer.KopanoProductClaims {
+	v := pointer.Restore(ptr)
+	kpc, _ := v.(*kustomer.KopanoProductClaims)
+	return kpc
+}
+
+//export kustomer_dump_ensure
+func kustomer_dump_ensure(ptr unsafe.Pointer) (C.ulonglong, *C.char) {
+	kpc := restoreKopanoProductClaimsFromPointer(ptr)
+	if kpc == nil {
+		return asKnownErrorOrUnknown(kustomer.ErrEnsureInvalidTransaction), nil
+	}
+
+	m := kpc.Dump()
+	b, err := json.Marshal(m)
+	if err != nil {
+		return asKnownErrorOrUnknown(err), nil
+	}
+
+	return kustomer.StatusSuccess, C.CString(string(b))
+}
+
+//export kustomer_ensure_set_must_be_online
+func kustomer_ensure_set_must_be_online(ptr unsafe.Pointer, flagCInt C.int) C.ulonglong {
+	kpc := restoreKopanoProductClaimsFromPointer(ptr)
+	if kpc == nil {
+		return asKnownErrorOrUnknown(kustomer.ErrEnsureInvalidTransaction)
+	}
+
+	var flag bool
+	if flagCInt != 0 {
+		flag = true
+	}
+	kpc.SetMustBeOnline(flag)
+
+	return kustomer.StatusSuccess
+}
+
+//export kustomer_ensure_set_allow_untrusted
+func kustomer_ensure_set_allow_untrusted(ptr unsafe.Pointer, flagCInt C.int) C.ulonglong {
+	kpc := restoreKopanoProductClaimsFromPointer(ptr)
+	if kpc == nil {
+		return asKnownErrorOrUnknown(kustomer.ErrEnsureInvalidTransaction)
+	}
+
+	var flag bool
+	if flagCInt != 0 {
+		flag = true
+	}
+	kpc.SetAllowUntrusted(flag)
+
+	return kustomer.StatusSuccess
+}
+
+//export kustomer_ensure_ok
+func kustomer_ensure_ok(ptr unsafe.Pointer, productNameCString *C.char) C.ulonglong {
+	kpc := restoreKopanoProductClaimsFromPointer(ptr)
+	if kpc == nil {
+		return asKnownErrorOrUnknown(kustomer.ErrEnsureInvalidTransaction)
+	}
+
+	err := kpc.EnsureOK(C.GoString(productNameCString))
+	if err != nil {
+		return asKnownErrorOrUnknown(err)
+	}
+
+	return kustomer.StatusSuccess
+}
+
+//export kustomer_ensure_value_bool
+func kustomer_ensure_value_bool(ptr unsafe.Pointer, productNameCString *C.char, claimCString *C.char, valueCInt C.int) C.ulonglong {
+	kpc := restoreKopanoProductClaimsFromPointer(ptr)
+	if kpc == nil {
+		return asKnownErrorOrUnknown(kustomer.ErrEnsureInvalidTransaction)
+	}
+
+	var value bool
+	if valueCInt != 0 {
+		value = true
+	}
+	err := kpc.EnsureBool(C.GoString(productNameCString), C.GoString(claimCString), value)
+	if err != nil {
+		return asKnownErrorOrUnknown(err)
+	}
+
+	return kustomer.StatusSuccess
+}
+
+//export kustomer_ensure_value_string
+func kustomer_ensure_value_string(ptr unsafe.Pointer, productNameCString *C.char, claimCString *C.char, valueCString *C.char) C.ulonglong {
+	kpc := restoreKopanoProductClaimsFromPointer(ptr)
+	if kpc == nil {
+		return asKnownErrorOrUnknown(kustomer.ErrEnsureInvalidTransaction)
+	}
+
+	err := kpc.EnsureString(C.GoString(productNameCString), C.GoString(claimCString), C.GoString(valueCString))
+	if err != nil {
+		return asKnownErrorOrUnknown(err)
+	}
+
 	return kustomer.StatusSuccess
 }

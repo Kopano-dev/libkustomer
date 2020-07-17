@@ -45,11 +45,11 @@ func (kpc *KopanoProductClaims) Dump() map[string]interface{} {
 	}
 }
 
-func (kpc *KopanoProductClaims) MustBeOnline(flag bool) {
+func (kpc *KopanoProductClaims) SetMustBeOnline(flag bool) {
 	kpc.mustBeOnline = flag
 }
 
-func (kpc *KopanoProductClaims) AllowUntrusted(flag bool) {
+func (kpc *KopanoProductClaims) SetAllowUntrusted(flag bool) {
 	kpc.allowUntrusted = flag
 }
 
@@ -77,7 +77,7 @@ func (kpc *KopanoProductClaims) EnsureOnlineAndTrusted() (err error) {
 	return
 }
 
-func (kpc *KopanoProductClaims) ensureValue(product string, claim string) (interface{}, error) {
+func (kpc *KopanoProductClaims) getProduct(product string) (*api.ClaimsKopanoProductsResponseProduct, error) {
 	if err := kpc.EnsureOnline(); kpc.mustBeOnline && err != nil {
 		return nil, err
 	}
@@ -89,6 +89,14 @@ func (kpc *KopanoProductClaims) ensureValue(product string, claim string) (inter
 	if !ok {
 		return nil, ErrEnsureProductNotFound
 	}
+	return p, nil
+}
+
+func (kpc *KopanoProductClaims) ensureValue(product string, claim string) (interface{}, error) {
+	p, err := kpc.getProduct(product)
+	if err != nil {
+		return nil, err
+	}
 	if !p.OK {
 		return nil, ErrEnsureProductNotLicensed
 	}
@@ -99,6 +107,17 @@ func (kpc *KopanoProductClaims) ensureValue(product string, claim string) (inter
 	}
 
 	return v, nil
+}
+
+func (kpc *KopanoProductClaims) EnsureOK(product string) (err error) {
+	p, err := kpc.getProduct(product)
+	if err != nil {
+		return err
+	}
+	if !p.OK {
+		return ErrEnsureProductNotLicensed
+	}
+	return nil
 }
 
 func (kpc *KopanoProductClaims) GetBool(product, claim string) (bool, error) {

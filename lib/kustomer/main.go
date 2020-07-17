@@ -8,8 +8,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
-	"log"
 	"os"
 	"sync"
 	"time"
@@ -18,24 +16,55 @@ import (
 )
 
 var (
-	mutex                    sync.RWMutex
-	debug                    bool
+	mutex sync.RWMutex
+
+	debug             bool
+	autoRefresh       = false
+	initializedLogger kustomer.Logger
+	instance          *kustomer.Kustomer
+
 	initializedContext       context.Context
 	initializedContextCancel context.CancelFunc
-	initializedLogger        *log.Logger
-	instance                 *kustomer.Kustomer
 )
 
 func init() {
 	if os.Getenv("KUSTOMER_DEBUG") != "" {
 		debug = true
-		fmt.Println("kustomer-c debug enabled")
-		initializedLogger = log.New(os.Stdout, "kustomer-c debug ", 0)
 	}
 }
 
+// SetAutoRefresh toggles weather or not this library should enable auto
+// refresh of active claims or not. It must be called before the call to
+// Initialize.
+func SetAutoRefresh(flag bool) error {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	if instance != nil {
+		return kustomer.ErrStatusAlreadyInitialized
+	}
+	autoRefresh = flag
+	return nil
+}
+
+// SetLogger sets the logger to be used by this library and if to use debug
+// logging. It must be called before the call to initialize.
+func SetLogger(logger kustomer.Logger, debugFlag *bool) error {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	if instance != nil {
+		return kustomer.ErrStatusAlreadyInitialized
+	}
+	initializedLogger = logger
+	if debugFlag != nil {
+		debug = *debugFlag
+	}
+	return nil
+}
+
 // Initialize initializes the global library state with the provided product name.
-func Initialize(ctx context.Context, productName string) error {
+func Initialize(ctx context.Context, productName *string) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
@@ -43,22 +72,29 @@ func Initialize(ctx context.Context, productName string) error {
 		return kustomer.ErrStatusAlreadyInitialized
 	}
 
+	if initializedLogger == nil && debug {
+		initializedLogger = getSimpleLogger("[kustomer-c debug] ")
+	}
+
 	k, err := kustomer.New(&kustomer.Config{
 		Logger:      initializedLogger,
 		Debug:       debug,
-		AutoRefresh: true,
+		AutoRefresh: autoRefresh,
 	})
 	if err != nil {
 		if debug {
-			fmt.Printf("kustomer-c initialize failed: %v\n", err)
+			initializedLogger.Printf("kustomer-c initialize failed: %v\n", err)
 		}
 		return err
 	}
 
-	err = k.Initialize(ctx, &productName)
+	if debug {
+		initializedLogger.Printf("kustomer-c initializing (autoRefresh: %v, debug: %v)\n", autoRefresh, debug)
+	}
+	err = k.Initialize(ctx, productName)
 	if err != nil {
 		if debug {
-			fmt.Printf("kustomer-c initialize failed: %v\n", err)
+			initializedLogger.Printf("kustomer-c initialize failed: %v\n", err)
 		}
 		return err
 	}
@@ -66,7 +102,7 @@ func Initialize(ctx context.Context, productName string) error {
 	instance = k
 	initializedContext, initializedContextCancel = context.WithCancel(ctx)
 	if debug {
-		fmt.Printf("kcoidc-c initialize success: %v\n", productName)
+		initializedLogger.Printf("kustomer-c initialize success: %v\n", productName)
 	}
 	return nil
 }
@@ -77,7 +113,7 @@ func Uninitialize() error {
 	defer mutex.Unlock()
 
 	if debug {
-		fmt.Println("kustomer-c uninitialize")
+		initializedLogger.Printf("kustomer-c uninitialize\n")
 	}
 
 	err := instance.Uninitialize()
@@ -91,7 +127,7 @@ func Uninitialize() error {
 
 	instance = nil
 	if debug {
-		fmt.Println("kustomer-c uninitialize success")
+		initializedLogger.Printf("kustomer-c uninitialize success\n")
 	}
 	return nil
 }
@@ -105,7 +141,7 @@ func WaitUntilReady(timeout time.Duration) error {
 
 	var err error
 	if debug {
-		fmt.Println("kustomer-c waiting until ready")
+		initializedLogger.Printf("kustomer-c waiting until ready\n")
 	}
 
 	if k == nil {
@@ -119,10 +155,40 @@ func WaitUntilReady(timeout time.Duration) error {
 		}
 	}
 	if debug {
-		fmt.Printf("kustomer-c finished waiting until ready: %v\n", err)
+		initializedLogger.Printf("kustomer-c finished waiting until ready: %v\n", err)
 	}
 
 	return err
+}
+
+func CurrentClaims() (*kustomer.Claims, error) {
+	mutex.RLock()
+	k := instance
+	ctx := initializedContext
+	mutex.RUnlock()
+
+	if k == nil {
+		return nil, kustomer.ErrStatusNotInitialized
+	}
+
+	return k.CurrentClaims(ctx), nil
+}
+
+func CurrentKopanoProductClaims() (*kustomer.KopanoProductClaims, error) {
+	mutex.RLock()
+	k := instance
+	ctx := initializedContext
+	mutex.RUnlock()
+
+	if k == nil {
+		return nil, kustomer.ErrStatusNotInitialized
+	}
+
+	return k.CurrentKopanoProductClaims(ctx), nil
+}
+
+func ErrNumericText(err kustomer.ErrNumeric) string {
+	return kustomer.ErrNumericText(err)
 }
 
 func main() {}

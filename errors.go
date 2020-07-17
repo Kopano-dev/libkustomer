@@ -13,7 +13,7 @@ import (
 type ErrNumeric uint64
 
 func (errStatus ErrNumeric) Error() string {
-	return fmt.Sprintf("%s (:0x%x)", ErrStatusText(errStatus), uint64(errStatus))
+	return fmt.Sprintf("%s (:0x%x)", ErrNumericText(errStatus), uint64(errStatus))
 }
 
 // Numeric errors for status.
@@ -39,6 +39,7 @@ const (
 	ErrEnsureProductClaimValueTypeMismatch
 	ErrEnsureProductClaimValueMismatch
 	ErrEnsureUnknownOperator
+	ErrEnsureInvalidTransaction
 )
 
 // ErrNumericToTextMap maps numeric errors to readable names.
@@ -57,11 +58,12 @@ var ErrNumericToTextMap = map[ErrNumeric]string{
 	ErrEnsureProductClaimValueTypeMismatch: "Ensure failed, product claim value type mismatch",
 	ErrEnsureProductClaimValueMismatch:     "Ensure failed, product claim value mismatch",
 	ErrEnsureUnknownOperator:               "Ensure failed, unknown operator",
+	ErrEnsureInvalidTransaction:            "Ensure failed, invalid transaction",
 }
 
-// ErrStatusText returns a text for the ErrStatus. It returns the empty string
+// ErrNumericText returns a text for the ErrStatus. It returns the empty string
 // if the code is unknown.
-func ErrStatusText(code ErrNumeric) string {
-	text := ErrNumericToTextMap[code]
+func ErrNumericText(code ErrNumeric) string {
+	text, _ := ErrNumericToTextMap[code]
 	return text
 }

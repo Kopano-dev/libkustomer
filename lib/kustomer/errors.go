@@ -23,3 +23,10 @@ func asKnownErrorOrUnknown(err error) C.ulonglong {
 		return C.ulonglong(kustomer.ErrStatusUnknown)
 	}
 }
+
+func asErrNumeric(errNum C.ulonglong) kustomer.ErrNumeric {
+	if errNum == 0 {
+		return 0
+	}
+	return kustomer.ErrNumeric(errNum)
+}

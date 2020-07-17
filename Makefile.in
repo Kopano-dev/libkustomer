@@ -6,7 +6,7 @@ PACKAGE_NAME = $(shell basename $(PACKAGE))
 prefix ?= @prefix@
 exec_prefix ?= @exec_prefix@
 libdir ?= @libdir@
-includedir ?= @includedir@
+includedir ?= @includedir@/kustomer
 
 # Tools
 
@@ -18,9 +18,10 @@ GO2XUNIT ?= @GO2XUNIT@
 
 DST_BIN  ?= ./bin
 DST_LIBS ?= ./.libs
+DST_HDRS ?= ./.libs/include/kustomer
 CC       ?= @CC@
 CXX      ?= @CXX@
-CFLAGS   ?= -I$(DST_LIBS)
+CFLAGS   ?= -I$(DST_HDRS)
 
 PYTHON ?= @PYTHON@
 
@@ -49,10 +50,11 @@ VERSION ?= $(shell git describe --tags --always --dirty --match=v* 2>/dev/null |
 PKGS     = $(or $(PKG),$(shell $(GO) list -mod=readonly ./... | grep -v "^$(PACKAGE)/vendor/"))
 TESTPKGS = $(shell $(GO) list -mod=readonly -f '{{ if or .TestGoFiles .XTestGoFiles }}{{ .ImportPath }}{{ end }}' $(PKGS) 2>/dev/null)
 CMDS     = $(or $(CMD),$(addprefix cmd/,$(notdir $(shell find "$(PWD)/cmd/" -type d))))
-LIBS     = $(or $(CMD),$(addprefix lib/,$(notdir $(shell find "$(PWD)/lib/" -type d))))
+LIBS     = $(addprefix lib/,$(notdir $(shell find "$(PWD)/lib/" -type d)))
+HDRS     = $(shell find "$(PWD)/lib/" -name "*.h")
 CAPIVER := 0
-CDEPS    = $(addprefix $(DST_LIBS)/,$(addsuffix .h,$(notdir $(LIBS))))
 CLIBS    = $(addprefix $(DST_LIBS)/lib,$(addsuffix .so.$(CAPIVER),$(notdir $(LIBS))))
+CHDRS    = $(DST_HDRS)/$(notdir $(HDRS))
 TIMEOUT  = 30
 
 # Build
@@ -64,10 +66,13 @@ default: lib
 all: lib python
 
 $(DST_BIN):
-	@mkdir $@
+	@mkdir -p $@
 
 $(DST_LIBS):
-	@mkdir $@
+	@mkdir -p $@
+
+$(DST_HDRS):
+	@mkdir -p $@
 
 .PHONY: $(CMDS)
 $(CMDS): vendor ; $(info building $@ ...) @
@@ -79,7 +84,7 @@ $(CMDS): vendor ; $(info building $@ ...) @
 		-o bin/$(notdir $@) ./$@
 
 .PHONY: $(LIBS)
-$(LIBS): vendor | $(DST_BIN) $(DST_LIBS); $(info building C libs $@ ...) @
+$(LIBS): vendor | $(DST_BIN) $(DST_LIBS) $(DST_HDRS); $(info building C libs $@ ...) @
 	CGO_ENABLED=1 $(GO) build \
 		-mod=vendor \
 		-tags release \
@@ -89,16 +94,21 @@ $(LIBS): vendor | $(DST_BIN) $(DST_LIBS); $(info building C libs $@ ...) @
 		-o $(DST_LIBS)/$(notdir $@).so ./$@
 	@mv -f $(DST_LIBS)/$(notdir $@).so $(DST_LIBS)/lib$(notdir $@).so.$(CAPIVER)
 	cd $(DST_LIBS) && ln -sfn lib$(notdir $@).so.$(CAPIVER) lib$(notdir $@).so
+	@mv -f $(DST_LIBS)/$(notdir $@).h $(DST_HDRS)
 
-$(CDEPS): $(LIBS)
+.PHONY: $(HDRS)
+$(HDRS): $(DST_HDRS)
+	@cp -af $@ $(DST_HDRS)/$(notdir $@)
 
-$(CLIBS): $(CDEPS)
+$(CHDRS): $(HDRS)
+
+$(CLIBS): $(LIBS) $(CHDRS)
 
 .PHONY: lib
 lib: fmt vendor | $(CLIBS)
 
 .PHONY: python
-python: $(CDEPS)
+python: $(CLIBS)
 	(cd python && $(PYTHON) setup.py build)
 
 # Examples
@@ -199,11 +209,11 @@ dist: licenses ; $(info building dist tarball ...)
 install: lib ; $(info installing ...)
 	@mkdir -p $(DESTDIR)$(libdir)
 	@mkdir -p $(DESTDIR)$(includedir)
-	cp -f $(CLIBS) $(DESTDIR)$(libdir)
+	cp -af $(CLIBS) $(DESTDIR)$(libdir)
 	chmod 755 $(DESTDIR)$(libdir)/$(SHAREDLIBV)
 	rm -f $(DESTDIR)$(libdir)/$(SHAREDLIB)
 	ln -s $(SHAREDLIBV) $(DESTDIR)$(libdir)/$(SHAREDLIB)
-	cp -f $(CDEPS) $(DESTDIR)$(includedir)
+	cp -af $(CHDRS) $(DESTDIR)$(includedir)
 	(ldconfig || true) >/dev/null 2>&1
 
 .PHONY: uninstall
