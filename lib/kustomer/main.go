@@ -112,6 +112,10 @@ func Uninitialize() error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
+	if instance == nil {
+		return kustomer.ErrStatusNotInitialized
+	}
+
 	if debug {
 		initializedLogger.Printf("kustomer-c uninitialize\n")
 	}
