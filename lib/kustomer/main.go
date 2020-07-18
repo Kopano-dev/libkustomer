@@ -30,6 +30,7 @@ var (
 func init() {
 	if os.Getenv("KUSTOMER_DEBUG") != "" {
 		debug = true
+		initializedLogger = getDefaultDebugLogger()
 	}
 }
 
@@ -73,7 +74,7 @@ func Initialize(ctx context.Context, productName *string) error {
 	}
 
 	if initializedLogger == nil && debug {
-		initializedLogger = getSimpleLogger("[kustomer-c debug] ")
+		initializedLogger = getDefaultDebugLogger()
 	}
 
 	k, err := kustomer.New(&kustomer.Config{

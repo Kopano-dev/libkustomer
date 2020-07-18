@@ -37,3 +37,13 @@ func getCLogger(cb C.kustomer_cb_func_log_s) kustomer.Logger {
 		cb: cb,
 	}
 }
+
+var defaultLogger kustomer.Logger
+
+func getDefaultDebugLogger() kustomer.Logger {
+	if defaultLogger == nil {
+		defaultLogger = getSimpleLogger("[kustomer-c debug] ")
+	}
+
+	return defaultLogger
+}
