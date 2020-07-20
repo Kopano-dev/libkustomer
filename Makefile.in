@@ -24,6 +24,7 @@ CXX      ?= @CXX@
 CFLAGS   ?= -I$(DST_HDRS)
 
 PYTHON ?= @PYTHON@
+PHPIZE ?= @PHPIZE@
 
 # Cgo
 
@@ -116,6 +117,10 @@ lib: fmt vendor | $(CLIBS)
 python: $(CLIBS)
 	(cd python && $(PYTHON) setup.py build)
 
+.PHONY: php
+php: $(CLIBS)
+	(cd php && $(PHPIZE) && ./configure && make)
+
 # Examples
 
 .PHONY: examples
@@ -201,6 +206,7 @@ dist: licenses ; $(info building dist tarball ...)
 	cp -avf ../LICENSE.txt "${PACKAGE_NAME}-${VERSION}" && \
 	cp -avf ../3rdparty-LICENSES.md "${PACKAGE_NAME}-${VERSION}" && \
 	cp -avf ../README.md "${PACKAGE_NAME}-${VERSION}" && \
+	cp -avf ../libkustomer.pc "${PACKAGE_NAME}-${VERSION}" && \
 	cp -avf ../.libs/* "${PACKAGE_NAME}-${VERSION}" && \
 	chmod 755 "${PACKAGE_NAME}-${VERSION}"/*.so* && \
 	rm -f "${PACKAGE_NAME}-${VERSION}"/$(SHAREDLIB) && \
@@ -214,6 +220,7 @@ dist: licenses ; $(info building dist tarball ...)
 install: lib ; $(info installing ...)
 	@mkdir -p $(DESTDIR)$(libdir)
 	@mkdir -p $(DESTDIR)$(includedir)
+	cp -af libkustomer.pc $(DESTDIR)$(libdir)/pkgconfig
 	cp -af $(CLIBS) $(DESTDIR)$(libdir)
 	chmod 755 $(DESTDIR)$(libdir)/$(SHAREDLIBV)
 	rm -f $(DESTDIR)$(libdir)/$(SHAREDLIB)
@@ -223,6 +230,7 @@ install: lib ; $(info installing ...)
 
 .PHONY: uninstall
 uninstall: ; $(info uninstalling ...)
+	rm -f  $(DESTDIR)$(libdir)/pkgconfig/libkustomer.pc
 	rm -f $(DESTDIR)$(libdir)/$(notdir $(CLIBS))
 	rm -f $(DESTDIR)$(libdir)/$(SHAREDLIB)
 	rm -f $(DESTDIR)$(includedir)/$(notdir $(CDEPS))

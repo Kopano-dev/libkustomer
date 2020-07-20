@@ -1,7 +1,9 @@
 AC_PREREQ(2.60)
-AC_INIT([libkustomer], [0.0.1], [development@kopano.io])
+AC_INIT([libkustomer], m4_esyscmd([scripts/git-version-gen .version]), [development@kopano.io])
 
 AC_CONFIG_MACRO_DIR([m4])
+
+AC_CONFIG_FILES([libkustomer.pc])
 
 AC_PROG_CC
 if ! which "${CC}" >/dev/null ; then
@@ -30,5 +32,6 @@ AC_PATH_PROG([GOLINT],[golangci-lint])
 AC_PATH_PROG([GO2XUNIT],[go2xunit])
 
 AC_PATH_PROGS([PYTHON],[python3 python python2],[python])
+AC_PATH_PROGS([PHPIZE],[phpize phpize7.4 phpize7.3 phpize7.2 phpize7.1 phpize7.0],[phpize])
 
 AC_OUTPUT(Makefile)

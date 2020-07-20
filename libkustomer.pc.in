@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@/kustomer
+
+Name: Kopano-libkustomer
+Description: Kopano Customer client library
+Version: @PACKAGE_VERSION@
+Libs: -L${libdir} -lkustomer
+Cflags: -I${includedir}
