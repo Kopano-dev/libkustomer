@@ -207,8 +207,27 @@ func kustomer_ensure_ok(transactionPtr unsafe.Pointer, productNameCString *C.cha
 	return kustomer.StatusSuccess
 }
 
-//export kustomer_ensure_value_bool
-func kustomer_ensure_value_bool(transactionPtr unsafe.Pointer, productNameCString, claimCString *C.char, valueCInt C.int) C.ulonglong {
+//export kustomer_ensure_get_bool
+func kustomer_ensure_get_bool(transactionPtr unsafe.Pointer, productNameCString, claimCString *C.char) (C.ulonglong, C.int) {
+	kpc := restoreKopanoProductClaimsFromPointer(transactionPtr)
+	if kpc == nil {
+		return asKnownErrorOrUnknown(kustomer.ErrEnsureInvalidTransaction), 0
+	}
+
+	value, err := kpc.GetBool(C.GoString(productNameCString), C.GoString(claimCString))
+	if err != nil {
+		return asKnownErrorOrUnknown(err), 0
+	}
+
+	var valueCInt C.int = 0
+	if value {
+		valueCInt = 1
+	}
+	return kustomer.StatusSuccess, valueCInt
+}
+
+//export kustomer_ensure_ensure_bool
+func kustomer_ensure_ensure_bool(transactionPtr unsafe.Pointer, productNameCString, claimCString *C.char, valueCInt C.int) C.ulonglong {
 	kpc := restoreKopanoProductClaimsFromPointer(transactionPtr)
 	if kpc == nil {
 		return asKnownErrorOrUnknown(kustomer.ErrEnsureInvalidTransaction)
@@ -226,14 +245,145 @@ func kustomer_ensure_value_bool(transactionPtr unsafe.Pointer, productNameCStrin
 	return kustomer.StatusSuccess
 }
 
-//export kustomer_ensure_value_string
-func kustomer_ensure_value_string(transactionPtr unsafe.Pointer, productNameCString, claimCString, valueCString *C.char) C.ulonglong {
+//export kustomer_ensure_get_string
+func kustomer_ensure_get_string(transactionPtr unsafe.Pointer, productNameCString, claimCString *C.char) (C.ulonglong, *C.char) {
+	kpc := restoreKopanoProductClaimsFromPointer(transactionPtr)
+	if kpc == nil {
+		return asKnownErrorOrUnknown(kustomer.ErrEnsureInvalidTransaction), nil
+	}
+
+	value, err := kpc.GetString(C.GoString(productNameCString), C.GoString(claimCString))
+	if err != nil {
+		return asKnownErrorOrUnknown(err), nil
+	}
+
+	return kustomer.StatusSuccess, C.CString(value)
+}
+
+//export kustomer_ensure_ensure_string
+func kustomer_ensure_ensure_string(transactionPtr unsafe.Pointer, productNameCString, claimCString, valueCString *C.char) C.ulonglong {
 	kpc := restoreKopanoProductClaimsFromPointer(transactionPtr)
 	if kpc == nil {
 		return asKnownErrorOrUnknown(kustomer.ErrEnsureInvalidTransaction)
 	}
 
 	err := kpc.EnsureString(C.GoString(productNameCString), C.GoString(claimCString), C.GoString(valueCString))
+	if err != nil {
+		return asKnownErrorOrUnknown(err)
+	}
+
+	return kustomer.StatusSuccess
+}
+
+//export kustomer_ensure_get_int64
+func kustomer_ensure_get_int64(transactionPtr unsafe.Pointer, productNameCString, claimCString *C.char) (C.ulonglong, C.longlong) {
+	kpc := restoreKopanoProductClaimsFromPointer(transactionPtr)
+	if kpc == nil {
+		return asKnownErrorOrUnknown(kustomer.ErrEnsureInvalidTransaction), 0
+	}
+
+	value, err := kpc.GetInt64(C.GoString(productNameCString), C.GoString(claimCString))
+	if err != nil {
+		return asKnownErrorOrUnknown(err), 0
+	}
+
+	return kustomer.StatusSuccess, C.longlong(value)
+}
+
+//export kustomer_ensure_ensure_int64
+func kustomer_ensure_ensure_int64(transactionPtr unsafe.Pointer, productNameCString, claimCString *C.char, valueCLongLong C.longlong) C.ulonglong {
+	kpc := restoreKopanoProductClaimsFromPointer(transactionPtr)
+	if kpc == nil {
+		return asKnownErrorOrUnknown(kustomer.ErrEnsureInvalidTransaction)
+	}
+
+	err := kpc.EnsureInt64(C.GoString(productNameCString), C.GoString(claimCString), int64(valueCLongLong))
+	if err != nil {
+		return asKnownErrorOrUnknown(err)
+	}
+
+	return kustomer.StatusSuccess
+}
+
+var operatorCodeArray = []kustomer.OperatorType{
+	kustomer.OperatorGreaterThan,
+	kustomer.OperatorGreaterThanOrEqual,
+	kustomer.OperatorLesserThan,
+	kustomer.OperatorLesserThanOrEqual,
+}
+
+func getOperatorFromCode(opCode int) *kustomer.OperatorType {
+	if opCode < 1 || opCode > len(operatorCodeArray) {
+		return nil
+	}
+
+	op := operatorCodeArray[opCode]
+	return &op
+}
+
+//export kustomer_ensure_ensure_int64_op
+func kustomer_ensure_ensure_int64_op(transactionPtr unsafe.Pointer, productNameCString, claimCString *C.char, valueCLongLong C.longlong, opCode C.int) C.ulonglong {
+	kpc := restoreKopanoProductClaimsFromPointer(transactionPtr)
+	if kpc == nil {
+		return asKnownErrorOrUnknown(kustomer.ErrEnsureInvalidTransaction)
+	}
+
+	op := getOperatorFromCode(int(opCode))
+	if op == nil {
+		return asKnownErrorOrUnknown(kustomer.ErrEnsureUnknownOperator)
+	}
+
+	err := kpc.EnsureInt64WithOperator(C.GoString(productNameCString), C.GoString(claimCString), int64(valueCLongLong), *op)
+	if err != nil {
+		return asKnownErrorOrUnknown(err)
+	}
+
+	return kustomer.StatusSuccess
+}
+
+//export kustomer_ensure_get_float64
+func kustomer_ensure_get_float64(transactionPtr unsafe.Pointer, productNameCString, claimCString *C.char) (C.ulonglong, C.double) {
+	kpc := restoreKopanoProductClaimsFromPointer(transactionPtr)
+	if kpc == nil {
+		return asKnownErrorOrUnknown(kustomer.ErrEnsureInvalidTransaction), 0
+	}
+
+	value, err := kpc.GetFloat64(C.GoString(productNameCString), C.GoString(claimCString))
+	if err != nil {
+		return asKnownErrorOrUnknown(err), 0
+	}
+
+	return kustomer.StatusSuccess, C.double(value)
+}
+
+//export kustomer_ensure_ensure_float64
+func kustomer_ensure_ensure_float64(transactionPtr unsafe.Pointer, productNameCString, claimCString *C.char, valueCDouble C.double) C.ulonglong {
+	kpc := restoreKopanoProductClaimsFromPointer(transactionPtr)
+	if kpc == nil {
+		return asKnownErrorOrUnknown(kustomer.ErrEnsureInvalidTransaction)
+	}
+
+	err := kpc.EnsureFloat64(C.GoString(productNameCString), C.GoString(claimCString), float64(valueCDouble))
+	if err != nil {
+		return asKnownErrorOrUnknown(err)
+	}
+
+	return kustomer.StatusSuccess
+}
+
+//export kustomer_ensure_ensure_float64_op
+func kustomer_ensure_ensure_float64_op(transactionPtr unsafe.Pointer, productNameCString, claimCString *C.char, valueCDouble C.double, opCode C.int) C.ulonglong {
+	kpc := restoreKopanoProductClaimsFromPointer(transactionPtr)
+	if kpc == nil {
+		return asKnownErrorOrUnknown(kustomer.ErrEnsureInvalidTransaction)
+	}
+
+	op := getOperatorFromCode(int(opCode))
+	if op == nil {
+		return asKnownErrorOrUnknown(kustomer.ErrEnsureUnknownOperator)
+	}
+
+	err := kpc.EnsureFloat64WithOperator(C.GoString(productNameCString), C.GoString(claimCString), float64(valueCDouble), *op)
 	if err != nil {
 		return asKnownErrorOrUnknown(err)
 	}
