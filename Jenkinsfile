@@ -37,7 +37,7 @@ pipeline {
 			steps {
 				echo 'Building..'
 				sh 'make DATE=reproducible'
-				sh 'sha256sum ./.libs/*'
+				sh 'find ./.libs -type f -exec sha256sum {} \\;'
 				sh 'make examples'
 			}
 		}
