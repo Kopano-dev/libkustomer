@@ -17,6 +17,7 @@ func (errStatus ErrNumeric) Error() string {
 }
 
 // Numeric errors for status.
+//go:generate stringer -type=ErrNumeric
 const (
 	ErrStatusNone               = 0
 	ErrStatusUnknown ErrNumeric = iota + (1 << 8)

@@ -11,7 +11,7 @@ package main
 
 #define KUSTOMER_VERSION (KUSTOMER_API * 10000 + KUSTOMER_API_MINOR * 100)
 
-#include "callbacks.h"
+#include "kustomer_callbacks.h"
 */
 import "C" //nolint
 

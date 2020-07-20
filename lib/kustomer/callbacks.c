@@ -3,7 +3,7 @@
  * Copyright 2020 Kopano and its licensors
  */
 
-#include "callbacks.h"
+#include "kustomer_callbacks.h"
 
 void bridge_kustomer_log_cb_func_log_s(kustomer_cb_func_log_s f, char* s)
 {

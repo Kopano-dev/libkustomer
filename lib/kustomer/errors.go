@@ -9,7 +9,7 @@ import "C"
 import (
 	"fmt"
 
-	"stash.kopano.io/kc/libkustomer"
+	kustomer "stash.kopano.io/kc/libkustomer"
 )
 
 func asKnownErrorOrUnknown(err error) C.ulonglong {

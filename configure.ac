@@ -14,6 +14,11 @@ if ! which "${GO}" >/dev/null ; then
     AC_MSG_ERROR([Please install Go (https://golang.org) before trying to build libkustomer])
 fi
 
+AC_PATH_PROG([STRINGER],[stringer])
+if ! which "${STRINGER}" >/dev/null ; then
+    AC_MSG_ERROR([Please installer the stringer tool (golang.org/x/tools/cmd/stringer)])
+fi
+
 GO_VERSION_MIN=1.14
 GO_VERSION=$(${GO} version | sed 's/^go version go//' | sed 's/ .*//')
 AX_COMPARE_VERSION([$GO_VERSION], [ge], [$GO_VERSION_MIN],
