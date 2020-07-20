@@ -123,12 +123,12 @@ $(DST_BIN)/ensure-cpp: examples/ensure.cpp $(CLIBS)
 
 .PHONY: lint
 lint: vendor ; $(info running $(GOLINT) ...)	@
-	$(GOLINT) run
+	CGO_ENABLED=1 $(GOLINT) run
 
 .PHONY: lint-checkstyle
 lint-checkstyle: vendor ; $(info running $(GOLINT) checkstyle ...)     @
 	@mkdir -p test
-	$(GOLINT) run --out-format checkstyle --issues-exit-code 0 > test/tests.lint.xml
+	CGO_ENABLED=1 $(GOLINT) run --out-format checkstyle --issues-exit-code 0 > test/tests.lint.xml
 
 .PHONY: fmt
 fmt: ; $(info running gofmt ...)	@

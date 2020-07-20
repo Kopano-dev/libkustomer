@@ -13,13 +13,13 @@ package main
 
 #include "callbacks.h"
 */
-import "C"
+import "C" //nolint
 
 import (
 	"context"
 	"encoding/json"
 	"time"
-	"unsafe"
+	"unsafe" //nolint
 
 	"github.com/mattn/go-pointer"
 
@@ -115,38 +115,38 @@ func kustomer_err_numeric_text(errNum C.ulonglong) *C.char {
 }
 
 //export kustomer_begin_ensure
-func kustomer_begin_ensure() (C.ulonglong, unsafe.Pointer) {
+func kustomer_begin_ensure() (statusNum C.ulonglong, transactionPtr unsafe.Pointer) {
 	kpc, err := CurrentKopanoProductClaims()
 	if err != nil {
 		return asKnownErrorOrUnknown(err), nil
 	}
 
-	ptr := pointer.Save(kpc)
+	transactionPtr = pointer.Save(kpc)
 
-	return kustomer.StatusSuccess, ptr
+	return kustomer.StatusSuccess, transactionPtr
 }
 
 //export kustomer_end_ensure
-func kustomer_end_ensure(ptr unsafe.Pointer) C.ulonglong {
-	v := pointer.Restore(ptr)
+func kustomer_end_ensure(transactionPtr unsafe.Pointer) C.ulonglong {
+	v := pointer.Restore(transactionPtr)
 	kpc, _ := v.(*kustomer.KopanoProductClaims)
 	if kpc == nil {
 		return asKnownErrorOrUnknown(kustomer.ErrEnsureInvalidTransaction)
 	}
-	pointer.Unref(ptr)
+	pointer.Unref(transactionPtr)
 
 	return kustomer.StatusSuccess
 }
 
-func restoreKopanoProductClaimsFromPointer(ptr unsafe.Pointer) *kustomer.KopanoProductClaims {
-	v := pointer.Restore(ptr)
+func restoreKopanoProductClaimsFromPointer(transactionPtr unsafe.Pointer) *kustomer.KopanoProductClaims {
+	v := pointer.Restore(transactionPtr)
 	kpc, _ := v.(*kustomer.KopanoProductClaims)
 	return kpc
 }
 
 //export kustomer_dump_ensure
-func kustomer_dump_ensure(ptr unsafe.Pointer) (C.ulonglong, *C.char) {
-	kpc := restoreKopanoProductClaimsFromPointer(ptr)
+func kustomer_dump_ensure(transactionPtr unsafe.Pointer) (statusNum C.ulonglong, jsonBytes *C.char) {
+	kpc := restoreKopanoProductClaimsFromPointer(transactionPtr)
 	if kpc == nil {
 		return asKnownErrorOrUnknown(kustomer.ErrEnsureInvalidTransaction), nil
 	}
@@ -161,8 +161,8 @@ func kustomer_dump_ensure(ptr unsafe.Pointer) (C.ulonglong, *C.char) {
 }
 
 //export kustomer_ensure_set_must_be_online
-func kustomer_ensure_set_must_be_online(ptr unsafe.Pointer, flagCInt C.int) C.ulonglong {
-	kpc := restoreKopanoProductClaimsFromPointer(ptr)
+func kustomer_ensure_set_must_be_online(transactionPtr unsafe.Pointer, flagCInt C.int) C.ulonglong {
+	kpc := restoreKopanoProductClaimsFromPointer(transactionPtr)
 	if kpc == nil {
 		return asKnownErrorOrUnknown(kustomer.ErrEnsureInvalidTransaction)
 	}
@@ -177,8 +177,8 @@ func kustomer_ensure_set_must_be_online(ptr unsafe.Pointer, flagCInt C.int) C.ul
 }
 
 //export kustomer_ensure_set_allow_untrusted
-func kustomer_ensure_set_allow_untrusted(ptr unsafe.Pointer, flagCInt C.int) C.ulonglong {
-	kpc := restoreKopanoProductClaimsFromPointer(ptr)
+func kustomer_ensure_set_allow_untrusted(transactionPtr unsafe.Pointer, flagCInt C.int) C.ulonglong {
+	kpc := restoreKopanoProductClaimsFromPointer(transactionPtr)
 	if kpc == nil {
 		return asKnownErrorOrUnknown(kustomer.ErrEnsureInvalidTransaction)
 	}
@@ -193,8 +193,8 @@ func kustomer_ensure_set_allow_untrusted(ptr unsafe.Pointer, flagCInt C.int) C.u
 }
 
 //export kustomer_ensure_ok
-func kustomer_ensure_ok(ptr unsafe.Pointer, productNameCString *C.char) C.ulonglong {
-	kpc := restoreKopanoProductClaimsFromPointer(ptr)
+func kustomer_ensure_ok(transactionPtr unsafe.Pointer, productNameCString *C.char) C.ulonglong {
+	kpc := restoreKopanoProductClaimsFromPointer(transactionPtr)
 	if kpc == nil {
 		return asKnownErrorOrUnknown(kustomer.ErrEnsureInvalidTransaction)
 	}
@@ -208,8 +208,8 @@ func kustomer_ensure_ok(ptr unsafe.Pointer, productNameCString *C.char) C.ulongl
 }
 
 //export kustomer_ensure_value_bool
-func kustomer_ensure_value_bool(ptr unsafe.Pointer, productNameCString *C.char, claimCString *C.char, valueCInt C.int) C.ulonglong {
-	kpc := restoreKopanoProductClaimsFromPointer(ptr)
+func kustomer_ensure_value_bool(transactionPtr unsafe.Pointer, productNameCString, claimCString *C.char, valueCInt C.int) C.ulonglong {
+	kpc := restoreKopanoProductClaimsFromPointer(transactionPtr)
 	if kpc == nil {
 		return asKnownErrorOrUnknown(kustomer.ErrEnsureInvalidTransaction)
 	}
@@ -227,8 +227,8 @@ func kustomer_ensure_value_bool(ptr unsafe.Pointer, productNameCString *C.char, 
 }
 
 //export kustomer_ensure_value_string
-func kustomer_ensure_value_string(ptr unsafe.Pointer, productNameCString *C.char, claimCString *C.char, valueCString *C.char) C.ulonglong {
-	kpc := restoreKopanoProductClaimsFromPointer(ptr)
+func kustomer_ensure_value_string(transactionPtr unsafe.Pointer, productNameCString, claimCString, valueCString *C.char) C.ulonglong {
+	kpc := restoreKopanoProductClaimsFromPointer(transactionPtr)
 	if kpc == nil {
 		return asKnownErrorOrUnknown(kustomer.ErrEnsureInvalidTransaction)
 	}

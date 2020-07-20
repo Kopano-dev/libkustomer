@@ -18,8 +18,8 @@ func (errStatus ErrNumeric) Error() string {
 
 // Numeric errors for status.
 const (
-	ErrStatusNone               = iota
-	ErrStatusUnknown ErrNumeric = (1 << 8) | iota
+	ErrStatusNone               = 0
+	ErrStatusUnknown ErrNumeric = iota + (1 << 8)
 	ErrStatusInvalidProductName
 	ErrStatusAlreadyInitialized
 	ErrStatusNotInitialized
@@ -31,7 +31,7 @@ const StatusSuccess = ErrStatusNone
 
 // Numeric errors for ensure comparison.
 const (
-	ErrEnsureOnlineFailed ErrNumeric = (1 << 16) | iota
+	ErrEnsureOnlineFailed ErrNumeric = iota + (1 << 16) + 1
 	ErrEnsureTrustedFailed
 	ErrEnsureProductNotFound
 	ErrEnsureProductNotLicensed
@@ -64,6 +64,6 @@ var ErrNumericToTextMap = map[ErrNumeric]string{
 // ErrNumericText returns a text for the ErrStatus. It returns the empty string
 // if the code is unknown.
 func ErrNumericText(code ErrNumeric) string {
-	text, _ := ErrNumericToTextMap[code]
+	text := ErrNumericToTextMap[code]
 	return text
 }

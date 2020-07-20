@@ -79,7 +79,7 @@ func New(config *Config) (*Kustomer, error) {
 	k.httpClient = &http.Client{
 		Transport: &http.Transport{
 			DialContext: func(ctx context.Context, proto, addr string) (conn net.Conn, err error) {
-				if k.initialized == false {
+				if !k.initialized {
 					return nil, fmt.Errorf("cannot dial to API: %w", ErrStatusNotInitialized)
 				}
 				return dialer.DialContext(ctx, "unix", k.apiPath)
@@ -424,9 +424,10 @@ func (k *Kustomer) fetchClaims(ctx context.Context) (*api.ClaimsResponse, error)
 
 func (k *Kustomer) CurrentKopanoProductClaims(ctx context.Context) *KopanoProductClaims {
 	k.mutex.RLock()
-	defer k.mutex.RUnlock()
+	kpc := k.currentKopanoProductClaims
+	k.mutex.RUnlock()
 	return &KopanoProductClaims{
-		response: k.currentKopanoProductClaims,
+		response: kpc,
 	}
 }
 

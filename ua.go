@@ -16,7 +16,7 @@ import (
 // requests created by this library.
 var DefaultUserAgent = "libkustomer/" + version.Version
 
-func newRequestWithUserAgent(method string, uri string, body io.Reader) (*http.Request, error) {
+func newRequestWithUserAgent(method, uri string, body io.Reader) (*http.Request, error) {
 	request, err := http.NewRequest(method, uri, body)
 	if err != nil {
 		return nil, err

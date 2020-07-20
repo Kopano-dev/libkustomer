@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"stash.kopano.io/kc/libkustomer"
+	"stash.kopano.io/kc/libkustomer" //nolint:goimports // False positive.
 )
 
 var (
@@ -27,7 +27,7 @@ var (
 	initializedContextCancel context.CancelFunc
 )
 
-func init() {
+func init() { //nolint:gochecknoinits // This library uses init to set up env.
 	if os.Getenv("KUSTOMER_DEBUG") != "" {
 		debug = true
 		initializedLogger = getDefaultDebugLogger()

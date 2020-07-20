@@ -56,17 +56,23 @@ func main() {
 		panic("timeout waiting for first update")
 	}
 	fmt.Println("Ready with aggregated claims:")
-	dumpAsJSON(k.CurrentKopanoProductClaims(ctx).Dump())
+	if err := dumpAsJSON(k.CurrentKopanoProductClaims(ctx).Dump()); err != nil {
+		panic(err)
+	}
 
 	go func() {
 		for v := range updateCh {
 			fmt.Println("Claims have been updated:", v)
-			dumpAsJSON(k.CurrentKopanoProductClaims(ctx).Dump())
+			if err := dumpAsJSON(k.CurrentKopanoProductClaims(ctx).Dump()); err != nil {
+				panic(err)
+			}
 		}
 	}()
 
 	fmt.Println("Claims active on load:")
-	dumpAsJSON(k.CurrentClaims(ctx).Dump())
+	if err := dumpAsJSON(k.CurrentClaims(ctx).Dump()); err != nil {
+		panic(err)
+	}
 
 	fmt.Println("\nPress CTRL+C to exit.")
 	signalCh := make(chan os.Signal, 1)

@@ -5,8 +5,8 @@
 
 package main
 
+import "C"
 import (
-	"C"
 	"fmt"
 
 	"stash.kopano.io/kc/libkustomer"
