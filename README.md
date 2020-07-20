@@ -13,8 +13,8 @@ As this is a C library, it is furthermore assumed that there is a working C
 compiler toolchain in your path which includes autoconf and make.
 
 ```
-git clone <THIS-PROJECT> libkcoidc
-cd libkcoidc
+git clone <THIS-PROJECT> libkustomer
+cd libkustomer
 ./bootstrap.sh
 ./configure
 make
