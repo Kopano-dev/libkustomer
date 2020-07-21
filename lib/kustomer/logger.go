@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"stash.kopano.io/kc/libkustomer"
 )
@@ -24,7 +25,7 @@ type callbackLogger struct {
 }
 
 func (logger *callbackLogger) Printf(format string, a ...interface{}) {
-	s := fmt.Sprintf(format, a...)
+	s := strings.TrimRight(fmt.Sprintf(format, a...), "\n")
 	C.bridge_kustomer_log_cb_func_log_s(logger.cb, C.CString(s))
 }
 

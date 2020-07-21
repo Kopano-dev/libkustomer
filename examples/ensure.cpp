@@ -34,7 +34,7 @@ void handleSignal(int sigNum)
 void log(char* msg) {
 	auto s = std::string(msg);
 
-	std::cout << "> Log: " << s;
+	std::cout << "> Log: " << s << std::endl;
 }
 
 int main(int argc, char** argv)
