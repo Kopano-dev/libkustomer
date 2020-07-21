@@ -81,7 +81,7 @@ func (kpc *KopanoProductClaims) getProduct(product string) (*api.ClaimsKopanoPro
 	if err := kpc.EnsureOnline(); kpc.mustBeOnline && err != nil {
 		return nil, err
 	}
-	if err := kpc.EnsureTrusted(); kpc.allowUntrusted && err != nil {
+	if err := kpc.EnsureTrusted(); !kpc.allowUntrusted && err != nil {
 		return nil, err
 	}
 
