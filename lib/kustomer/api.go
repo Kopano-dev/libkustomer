@@ -93,6 +93,32 @@ func kustomer_wait_until_ready(timeout C.ulonglong) C.ulonglong {
 	return kustomer.StatusSuccess
 }
 
+//export kustomer_set_notify_when_updated
+func kustomer_set_notify_when_updated(updateCb C.kustomer_cb_func_watch, exitCb C.kustomer_cb_func_watch) C.ulonglong {
+	err := SetNotifyWhenUpdated(func() {
+		if updateCb != nil {
+			C.bridge_kustomer_watch_cb_func_updated(updateCb)
+		}
+	}, func() {
+		if exitCb != nil {
+			C.bridge_kustomer_watch_cb_func_updated(exitCb)
+		}
+	})
+	if err != nil {
+		return asKnownErrorOrUnknown(err)
+	}
+	return kustomer.StatusSuccess
+}
+
+//export kustomer_unset_notify_when_updated
+func kustomer_unset_notify_when_updated() C.ulonglong {
+	err := UnsetNotifyWhenUpdated()
+	if err != nil {
+		return asKnownErrorOrUnknown(err)
+	}
+	return kustomer.StatusSuccess
+}
+
 //export kustomer_dump_claims
 func kustomer_dump_claims() (C.ulonglong, *C.char) {
 	claims, err := CurrentClaims()

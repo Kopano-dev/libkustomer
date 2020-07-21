@@ -9,3 +9,8 @@ void bridge_kustomer_log_cb_func_log_s(kustomer_cb_func_log_s f, char* s)
 {
 	return f(s);
 }
+
+void bridge_kustomer_watch_cb_func_updated(kustomer_cb_func_watch f)
+{
+	return f();
+}

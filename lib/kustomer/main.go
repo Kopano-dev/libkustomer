@@ -25,6 +25,8 @@ var (
 
 	initializedContext       context.Context
 	initializedContextCancel context.CancelFunc
+
+	initializedNotifyCancel context.CancelFunc
 )
 
 func init() { //nolint:gochecknoinits // This library uses init to set up env.
@@ -198,6 +200,70 @@ func CurrentKopanoProductClaims() (*kustomer.KopanoProductClaims, error) {
 
 func ErrNumericText(err kustomer.ErrNumeric) string {
 	return kustomer.ErrNumericText(err)
+}
+
+func SetNotifyWhenUpdated(updateCb func(), exitCb func()) error {
+	mutex.Lock()
+	if initializedNotifyCancel != nil {
+		mutex.Unlock()
+		return kustomer.ErrStatusAlreadyInitialized
+	}
+	k := instance
+	notifyCtx, cancel := context.WithCancel(initializedContext)
+	initializedNotifyCancel = cancel
+	mutex.Unlock()
+
+	if k == nil {
+		return kustomer.ErrStatusNotInitialized
+	}
+
+	eventCh := make(chan bool, 4)
+
+	go func() {
+		defer cancel()
+		err := k.NotifyWhenUpdated(notifyCtx, eventCh)
+		if err != nil {
+			if initializedLogger != nil && !errors.Is(err, context.Canceled) {
+				initializedLogger.Printf("kustomer-c notify exit with error: %v\n", err)
+			}
+		}
+		mutex.Lock()
+		initializedNotifyCancel = nil
+		mutex.Unlock()
+	}()
+
+	go func() {
+		for {
+			select {
+			case <-notifyCtx.Done():
+				close(eventCh)
+				exitCb()
+				return
+			case updated := <-eventCh:
+				if updated {
+					updateCb()
+				}
+			}
+		}
+	}()
+
+	return nil
+}
+
+func UnsetNotifyWhenUpdated() error {
+	mutex.Lock()
+	if initializedNotifyCancel == nil {
+		mutex.Unlock()
+		return kustomer.ErrStatusNotInitialized
+	}
+
+	cancel := initializedNotifyCancel
+	initializedNotifyCancel = nil
+	mutex.Unlock()
+
+	cancel()
+
+	return nil
 }
 
 func main() {}
