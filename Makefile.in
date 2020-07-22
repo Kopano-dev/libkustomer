@@ -119,7 +119,7 @@ python: $(CLIBS)
 
 .PHONY: php
 php: $(CLIBS)
-	(cd php && $(PHPIZE) && ./configure && make)
+	(cd php && $(PHPIZE) && kustomer_LIBRARY="-L../.libs -lkustomer" kustomer_INCLUDE=../.libs/include/kustomer ./configure --enable-kustomer && make)
 
 # Examples
 
@@ -239,11 +239,12 @@ uninstall: ; $(info uninstalling ...)
 
 .PHONY: clean
 clean: ; $(info cleaning ...)	@
-	@rm -f config.* Makefile
 	@rm -rf .libs
 	@rm -rf bin
 	@rm -rf test/test.*
-	(cd python && $(PYTHON) setup.py clean)
+	@rm -f libkustomer.pc
+	@(cd python && $(PYTHON) setup.py clean || true)
+	@(cd php && test -f Makefile && make clean && phpize --clean || true)
 
 .PHONY: version
 version:

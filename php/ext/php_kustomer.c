@@ -13,14 +13,14 @@
 //* {{{ arginfo */
 ZEND_BEGIN_ARG_INFO_EX(arginfo_kustomer_initialize, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, productName, IS_STRING, 1)
-ZEND_END_ARG_INFO();
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_kustomer_uninitialize, 0, 0, 0)
-ZEND_END_ARG_INFO();
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_kustomer_wait_until_ready, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, timeout, IS_LONG, 1)
-ZEND_END_ARG_INFO();
+ZEND_END_ARG_INFO()
 /* }}} */
 
 /* {{{ kustomer_php_functions[] */
