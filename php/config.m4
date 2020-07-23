@@ -1,4 +1,7 @@
-PHP_ARG_ENABLE(kustomer, for kustomer support, [  --enable-kustomer     Enable Kustomer support])
+PHP_ARG_ENABLE(kustomer, for kustomer support, [  --enable-kustomer       Enable Kustomer support])
+
+AC_ARG_ENABLE([kustomer_allow_untrusted],
+	AS_HELP_STRING([--enable-kustomer-allow-untrusted], [Enable Kustomer to allow untrusted ensuring, use for development only]))
 
 if test "$PHP_KUSTOMER" != "no"; then
 	if test -z "$kustomer_INCLUDE" -o -z "$kustomer_LIBRARY" ; then
@@ -20,4 +23,8 @@ if test "$PHP_KUSTOMER" != "no"; then
 	PHP_SUBST(KUSTOMER_SHARED_LIBADD)
 	AC_DEFINE(HAVE_KUSTOMER, 1, [ ])
 	PHP_NEW_EXTENSION(kustomer, ext/php_kustomer.c, $ext_shared)
+fi
+
+if test "$enable_kustomer_allow_untrusted" = "yes"; then
+	AC_DEFINE(PHPKUSTOMER_ALLOW_UNTRUSTED, 1, [ ])
 fi
