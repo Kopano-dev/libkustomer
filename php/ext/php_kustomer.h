@@ -4,7 +4,7 @@
  */
 
 #define PHP_KUSTOMER_EXTNAME "kustomer"
-#define PHP_KUSTOMER_VERSION "0.0.1"
+#define PHP_KUSTOMER_VERSION "0.2.0"
 
 // Exports.
 PHP_FUNCTION(kustomer_initialize);
