@@ -176,11 +176,11 @@ func (kpc *KopanoProductClaims) GetInt64(product, claim string) (int64, error) {
 		return 0, err
 	}
 
-	tv, ok := v.(int64)
+	tv, ok := v.(float64)
 	if !ok {
 		return 0, ErrEnsureProductClaimValueTypeMismatch
 	}
-	return tv, nil
+	return int64(tv), nil
 }
 
 func (kpc *KopanoProductClaims) EnsureInt64(product, claim string, value int64) error {
