@@ -3,7 +3,7 @@
  * Copyright 2020 Kopano and its licensors
  */
 
-#define PHP_KUSTOMER_EXTNAME "php_kustomer"
+#define PHP_KUSTOMER_EXTNAME "kustomer"
 #define PHP_KUSTOMER_VERSION "0.0.1"
 
 // Exports.
