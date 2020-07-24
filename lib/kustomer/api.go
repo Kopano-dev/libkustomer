@@ -12,6 +12,14 @@ package main
 #define KUSTOMER_VERSION (KUSTOMER_API * 10000 + KUSTOMER_API_MINOR * 100)
 
 #include "kustomer_callbacks.h"
+
+// Keep enum in sync with operatorCodeArray.
+enum {
+	KUSTOMER_OPERATOR_GT = 1,
+	KUSTOMER_OPERATOR_GE,
+	KUSTOMER_OPERATOR_LT,
+	KUSTOMER_OPERATOR_LE,
+};
 */
 import "C" //nolint
 
@@ -343,7 +351,7 @@ func getOperatorFromCode(opCode int) *kustomer.OperatorType {
 		return nil
 	}
 
-	op := operatorCodeArray[opCode]
+	op := operatorCodeArray[opCode-1]
 	return &op
 }
 
