@@ -19,8 +19,10 @@ PHP_FUNCTION(kustomer_ensure_get_string);
 PHP_FUNCTION(kustomer_ensure_ensure_string);
 PHP_FUNCTION(kustomer_ensure_get_int64);
 PHP_FUNCTION(kustomer_ensure_ensure_int64);
+PHP_FUNCTION(kustomer_ensure_ensure_int64_op);
 PHP_FUNCTION(kustomer_ensure_get_float64);
 PHP_FUNCTION(kustomer_ensure_ensure_float64);
+PHP_FUNCTION(kustomer_ensure_ensure_float64_op);
 
 // Objects.
 zend_class_entry *phpkustomer_NumericException_ce;
@@ -43,6 +45,8 @@ typedef struct {
 
 zend_class_entry *phpkustomer_KopanoProductClaims_ce;
 
-// Errors.
+// Constants.
 #define PHPKUSTOMER_DECLARE_ERROR_CONSTANT(name, value) \
 	(zend_declare_class_constant_long(phpkustomer_NumericException_ce, name, sizeof(name)-1, value))
+#define PHPKUSTOMER_DECLARE_ENSURE_CONSTANT(name, value) \
+	(zend_declare_class_constant_long(phpkustomer_KopanoProductClaims_ce, name, sizeof(name)-1, value))

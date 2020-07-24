@@ -46,12 +46,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_kustomer_ensure_get, 0, 0, 3)
 	ZEND_ARG_TYPE_INFO(0, claim, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_kustomer_ensure_get_int64, 0, 0, 3)
-	ZEND_ARG_TYPE_INFO(0, transaction, IS_OBJECT, 1)
-	ZEND_ARG_TYPE_INFO(0, productName, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO(0, claim, IS_STRING, 0)
-ZEND_END_ARG_INFO()
-
 ZEND_BEGIN_ARG_INFO_EX(arginfo_kustomer_ensure_ensure_bool, 0, 0, 4)
 	ZEND_ARG_TYPE_INFO(0, transaction, IS_OBJECT, 0)
 	ZEND_ARG_TYPE_INFO(0, productName, IS_STRING, 0)
@@ -73,11 +67,27 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_kustomer_ensure_ensure_int64, 0, 0, 4)
 	ZEND_ARG_TYPE_INFO(0, value, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_kustomer_ensure_ensure_int64_op, 0, 0, 5)
+	ZEND_ARG_TYPE_INFO(0, transaction, IS_OBJECT, 0)
+	ZEND_ARG_TYPE_INFO(0, productName, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, claim, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, value, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, opCode, IS_LONG, 0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_kustomer_ensure_ensure_float64, 0, 0, 4)
 	ZEND_ARG_TYPE_INFO(0, transaction, IS_OBJECT, 0)
 	ZEND_ARG_TYPE_INFO(0, productName, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, claim, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, value, IS_DOUBLE, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_kustomer_ensure_ensure_float64_op, 0, 0, 5)
+	ZEND_ARG_TYPE_INFO(0, transaction, IS_OBJECT, 0)
+	ZEND_ARG_TYPE_INFO(0, productName, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, claim, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, value, IS_DOUBLE, 0)
+	ZEND_ARG_TYPE_INFO(0, opCode, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
 /* }}} */
@@ -414,6 +424,38 @@ PHP_FUNCTION(kustomer_ensure_ensure_int64)
 	}
 }
 
+PHP_FUNCTION(kustomer_ensure_ensure_int64_op)
+{
+	zval *kpc_zv;
+	zend_string *productName;
+	zend_string *claim;
+	zend_long value;
+	zend_long opCode;
+
+	ZEND_PARSE_PARAMETERS_START(5, 5)
+		Z_PARAM_OBJECT_OF_CLASS(kpc_zv, phpkustomer_KopanoProductClaims_ce)
+		Z_PARAM_STR(productName)
+		Z_PARAM_STR(claim)
+		Z_PARAM_LONG(value)
+		Z_PARAM_LONG(opCode)
+	ZEND_PARSE_PARAMETERS_END();
+
+	phpkustomer_KopanoProductClaims_t *kpc;
+	kpc = Z_PHPKUSTOMER_KOPANOPRODUCTCLAIMS_P(kpc_zv);
+
+	int res;
+
+	res = kustomer_ensure_ensure_int64_op(kpc->kpc_ptr, ZSTR_VAL(productName), ZSTR_VAL(claim), (long long int)value, (int)opCode);
+
+	zend_string_release(productName);
+	zend_string_release(claim);
+
+	if (res != KUSTOMER_ERRSTATUSSUCCESS) {
+		PHPKUSTOMER_THROW(res);
+		return;
+	}
+}
+
 PHP_FUNCTION(kustomer_ensure_get_float64)
 {
 	zval *kpc_zv;
@@ -474,6 +516,38 @@ PHP_FUNCTION(kustomer_ensure_ensure_float64)
 	}
 }
 
+PHP_FUNCTION(kustomer_ensure_ensure_float64_op)
+{
+	zval *kpc_zv;
+	zend_string *productName;
+	zend_string *claim;
+	double value;
+	zend_long opCode;
+
+	ZEND_PARSE_PARAMETERS_START(5, 5)
+		Z_PARAM_OBJECT_OF_CLASS(kpc_zv, phpkustomer_KopanoProductClaims_ce)
+		Z_PARAM_STR(productName)
+		Z_PARAM_STR(claim)
+		Z_PARAM_DOUBLE(value)
+		Z_PARAM_LONG(opCode)
+	ZEND_PARSE_PARAMETERS_END();
+
+	phpkustomer_KopanoProductClaims_t *kpc;
+	kpc = Z_PHPKUSTOMER_KOPANOPRODUCTCLAIMS_P(kpc_zv);
+
+	int res;
+
+	res = kustomer_ensure_ensure_float64_op(kpc->kpc_ptr, ZSTR_VAL(productName), ZSTR_VAL(claim), value, (int)opCode);
+
+	zend_string_release(productName);
+	zend_string_release(claim);
+
+	if (res != KUSTOMER_ERRSTATUSSUCCESS) {
+		PHPKUSTOMER_THROW(res);
+		return;
+	}
+}
+
 /* {{{ PHP_MINIT_FUNCTION */
 PHP_MINIT_FUNCTION(kustomer_php)
 {
@@ -508,10 +582,13 @@ PHP_MINIT_FUNCTION(kustomer_php)
 	INIT_CLASS_ENTRY(tmp_kpc_ce, "KUSTOMER\\KopanoProductClaims", phpkustomer_KopanoProductClaims_functions);
 	phpkustomer_KopanoProductClaims_ce = zend_register_internal_class(&tmp_kpc_ce);
 	phpkustomer_KopanoProductClaims_ce->create_object = phpkustomer_KopanoProductClaims_create_handler;
-
 	memcpy(&phpkustomer_KopanoProductClaims_object_handlers,
 		zend_get_std_object_handlers(), sizeof(zend_object_handlers));
 	phpkustomer_KopanoProductClaims_object_handlers.offset = XtOffsetOf(phpkustomer_KopanoProductClaims_t, std);
+	PHPKUSTOMER_DECLARE_ENSURE_CONSTANT("OperatorGreaterThan", KUSTOMER_OPERATOR_GT);
+	PHPKUSTOMER_DECLARE_ENSURE_CONSTANT("OperatorGreaterThanOrEqual", KUSTOMER_OPERATOR_GE);
+	PHPKUSTOMER_DECLARE_ENSURE_CONSTANT("OperatorLesserThan", KUSTOMER_OPERATOR_LT);
+	PHPKUSTOMER_DECLARE_ENSURE_CONSTANT("OperatorLesserThanOrEqual", KUSTOMER_OPERATOR_LE);
 
 	return SUCCESS;
 }
@@ -529,10 +606,12 @@ zend_function_entry kustomer_php_functions[] = {
 	PHP_FE(kustomer_ensure_ensure_bool, arginfo_kustomer_ensure_ensure_bool)
 	PHP_FE(kustomer_ensure_get_string, arginfo_kustomer_ensure_get)
 	PHP_FE(kustomer_ensure_ensure_string, arginfo_kustomer_ensure_ensure_string)
-	PHP_FE(kustomer_ensure_get_int64, arginfo_kustomer_ensure_get_int64)
+	PHP_FE(kustomer_ensure_get_int64, arginfo_kustomer_ensure_get)
 	PHP_FE(kustomer_ensure_ensure_int64, arginfo_kustomer_ensure_ensure_int64)
+	PHP_FE(kustomer_ensure_ensure_int64_op, arginfo_kustomer_ensure_ensure_int64_op)
 	PHP_FE(kustomer_ensure_get_float64, arginfo_kustomer_ensure_get)
 	PHP_FE(kustomer_ensure_ensure_float64, arginfo_kustomer_ensure_ensure_float64)
+	PHP_FE(kustomer_ensure_ensure_float64_op, arginfo_kustomer_ensure_ensure_float64_op)
 	PHP_FE_END
 };
 /* }}} */
