@@ -196,14 +196,9 @@ func (kpc *KopanoProductClaims) EnsureInt64(product, claim string, value int64) 
 }
 
 func (kpc *KopanoProductClaims) EnsureInt64WithOperator(product, claim string, value int64, op OperatorType) error {
-	v, err := kpc.ensureValue(product, claim)
+	tv, err := kpc.GetInt64(product, claim)
 	if err != nil {
 		return err
-	}
-
-	tv, ok := v.(int64)
-	if !ok {
-		return ErrEnsureProductClaimValueTypeMismatch
 	}
 
 	switch op {
@@ -255,14 +250,9 @@ func (kpc *KopanoProductClaims) EnsureFloat64(product, claim string, value float
 }
 
 func (kpc *KopanoProductClaims) EnsureFloat64WithOperator(product, claim string, value float64, op OperatorType) error {
-	v, err := kpc.ensureValue(product, claim)
+	tv, err := kpc.GetFloat64(product, claim)
 	if err != nil {
 		return err
-	}
-
-	tv, ok := v.(float64)
-	if !ok {
-		return ErrEnsureProductClaimValueTypeMismatch
 	}
 
 	switch op {
