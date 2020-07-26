@@ -59,12 +59,15 @@ CHDRS    = $(DST_HDRS)/$(notdir $(HDRS))
 TIMEOUT  = 30
 
 # Build
+LDFLAGS  ?=
+ASMFLAGS ?=
+GCFLAGS  ?=
 
 .PHONY: default
 default: lib
 
 .PHONY: all
-all: lib python
+all: lib python php
 
 $(DST_BIN):
 	@mkdir -p $@
@@ -96,7 +99,9 @@ $(LIBS): vendor generate | $(DST_BIN) $(DST_LIBS) $(DST_HDRS); $(info building C
 		-tags release \
 		-trimpath \
 		-buildmode=c-shared \
-		-ldflags '-s -w -buildid=reproducible/$(VERSION) -X $(PACKAGE)/version.Version=$(VERSION) -X $(PACKAGE)/version.BuildDate=$(DATE) -linkmode external -extldflags=-Wl,-soname,lib$(notdir $@).so.0' \
+		-asmflags '$(ASMFLAGS)' \
+		-gcflags '$(GCFLAGS)' \
+		-ldflags '$(LDFLAGS) -buildid=reproducible/$(VERSION) -X $(PACKAGE)/version.Version=$(VERSION) -X $(PACKAGE)/version.BuildDate=$(DATE) -linkmode external -extldflags=-Wl,-soname,lib$(notdir $@).so.0' \
 		-o $(DST_LIBS)/$(notdir $@).so ./$@
 	@mv -f $(DST_LIBS)/$(notdir $@).so $(DST_LIBS)/lib$(notdir $@).so.$(CAPIVER)
 	cd $(DST_LIBS) && ln -sfn lib$(notdir $@).so.$(CAPIVER) lib$(notdir $@).so
@@ -112,6 +117,10 @@ $(CLIBS): $(LIBS) $(CHDRS)
 
 .PHONY: lib
 lib: fmt vendor | $(CLIBS)
+
+.PHONY: lib-stripped
+lib-stripped: LDFLAGS= -s -w
+lib-stripped: lib
 
 .PHONY: python
 python: $(CLIBS)
