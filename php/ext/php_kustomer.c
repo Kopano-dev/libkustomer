@@ -10,6 +10,8 @@
 #include "ext/spl/spl_exceptions.h"
 #endif
 
+#include "ext/standard/info.h"
+
 #include <kustomer.h>
 #include <kustomer_errors.h>
 
@@ -107,6 +109,8 @@ ZEND_END_ARG_INFO()
 
 // Externals from libkustomer.
 typedef char* (*kustomer_err_numeric_text_dynamic_t)(unsigned long long errNum);
+typedef char* (*kustomer_version_dynamic_t)();
+typedef char* (*kustomer_build_date_dynamic_t)();
 typedef long long unsigned int (*kustomer_initialize_dynamic_t)(char *productName);
 typedef long long unsigned int (*kustomer_uninitialize_dynamic_t)();
 typedef long long unsigned int (*kustomer_wait_until_ready_dynamic_t)(unsigned long long timeout);
@@ -127,6 +131,8 @@ typedef long long unsigned int (*kustomer_ensure_ensure_float64_dynamic_t)(void 
 typedef long long unsigned int (*kustomer_ensure_ensure_float64_op_dynamic_t)(void *transactionPtr, char *productName, char *claim, double value, int opCode);
 typedef long long unsigned int (*kustomer_ensure_ensure_stringArray_value_dynamic_t)(void *transactionPtr, char *productName, char *claim, char *value);
 kustomer_err_numeric_text_dynamic_t kustomer_err_numeric_text_dynamic = NULL;
+kustomer_version_dynamic_t kustomer_version_dynamic = NULL;
+kustomer_build_date_dynamic_t kustomer_build_date_dynamic = NULL;
 kustomer_initialize_dynamic_t kustomer_initialize_dynamic = NULL;
 kustomer_uninitialize_dynamic_t kustomer_uninitialize_dynamic = NULL;
 kustomer_wait_until_ready_dynamic_t kustomer_wait_until_ready_dynamic = NULL;
@@ -166,6 +172,18 @@ int load_so()
 
 	kustomer_err_numeric_text_dynamic = (kustomer_err_numeric_text_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_err_numeric_text");
 	if (kustomer_err_numeric_text_dynamic == NULL) {
+		zend_throw_exception_ex(phpkustomer_NumericException_ce, KUSTOMER_ERRSTATUSTIMEOUT, "Could not load expected function from library");
+		return KUSTOMER_ERRSTATUSTIMEOUT;
+	}
+
+	kustomer_version_dynamic = (kustomer_version_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_version");
+	if (kustomer_version_dynamic == NULL) {
+		zend_throw_exception_ex(phpkustomer_NumericException_ce, KUSTOMER_ERRSTATUSTIMEOUT, "Could not load expected function from library");
+		return KUSTOMER_ERRSTATUSTIMEOUT;
+	}
+
+	kustomer_build_date_dynamic = (kustomer_build_date_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_build_date");
+	if (kustomer_build_date_dynamic == NULL) {
 		zend_throw_exception_ex(phpkustomer_NumericException_ce, KUSTOMER_ERRSTATUSTIMEOUT, "Could not load expected function from library");
 		return KUSTOMER_ERRSTATUSTIMEOUT;
 	}
@@ -893,6 +911,24 @@ PHP_MINIT_FUNCTION(kustomer_php)
 }
 /* }}} */
 
+/* {{{ PHP_MINFO_FUNCTION */
+PHP_MINFO_FUNCTION(kustomer_php) {
+	int res = load_so();
+
+	char buf[128];
+	php_info_print_table_start();
+	php_info_print_table_row(2, "kustomer support", "enabled");
+	php_info_print_table_row(2, "kustomer EXT version", PHP_KUSTOMER_VERSION);
+	if (res == KUSTOMER_ERRSTATUSSUCCESS) {
+		snprintf(buf, sizeof(buf), "%s (%s)", kustomer_version_dynamic(), kustomer_build_date_dynamic());
+	} else {
+		snprintf(buf, sizeof(buf), "failed to load");
+	}
+	php_info_print_table_row(2, "libkustomer library version", buf);
+	php_info_print_table_end();
+}
+/* }}} */
+
 /* {{{ kustomer_php_functions[] */
 zend_function_entry kustomer_php_functions[] = {
 	PHP_FE(kustomer_initialize, arginfo_kustomer_initialize)
@@ -927,7 +963,7 @@ zend_module_entry kustomer_php_module_entry = {
 	NULL,
 	NULL,
 	NULL,
-	NULL,
+	PHP_MINFO(kustomer_php),
 	PHP_KUSTOMER_VERSION,
 	STANDARD_MODULE_PROPERTIES
 };
