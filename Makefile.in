@@ -128,7 +128,7 @@ python: $(CLIBS)
 
 .PHONY: php
 php: $(CLIBS)
-	(cd php && $(PHPIZE) && kustomer_LIBRARY="-L../.libs -lkustomer" kustomer_INCLUDE=../.libs/include/kustomer ./configure --enable-kustomer && make)
+	(cd php && $(PHPIZE) && kustomer_INCLUDE=../.libs/include/kustomer ./configure --enable-kustomer && make)
 
 # Examples
 

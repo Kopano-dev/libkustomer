@@ -92,6 +92,93 @@ ZEND_END_ARG_INFO()
 
 /* }}} */
 
+// Externals from libkustomer.
+typedef char* (*kustomer_err_numeric_text_dynamic_t)(unsigned long long errNum);
+typedef long long unsigned int (*kustomer_initialize_dynamic_t)(char *productName);
+typedef long long unsigned int (*kustomer_uninitialize_dynamic_t)();
+typedef long long unsigned int (*kustomer_wait_until_ready_dynamic_t)(unsigned long long timeout);
+typedef struct kustomer_begin_ensure_return (*kustomer_begin_ensure_dynamic_t)();
+typedef long long unsigned int (*kustomer_end_ensure_dynamic_t)(void *transactionPtr);
+typedef long long unsigned int (*kustomer_ensure_set_allow_untrusted_dynamic_t)(void *transactionPtr, int flag);
+typedef long long unsigned int (*kustomer_ensure_ok_dynamic_t)(void *transactionPtr, char *productName);
+typedef struct kustomer_ensure_get_bool_return (*kustomer_ensure_get_bool_dynamic_t)(void *transactionPtr, char *productName, char *claim);
+typedef long long unsigned int (*kustomer_ensure_ensure_bool_dynamic_t)(void *transactionPtr, char *productName, char *claim, int value);
+typedef struct kustomer_ensure_get_string_return (*kustomer_ensure_get_string_dynamic_t)(void *transactionPtr, char *productName, char *claim);
+typedef long long unsigned int (*kustomer_ensure_ensure_string_dynamic_t)(void *transactionPtr, char *productName, char *claim, char *value);
+typedef struct kustomer_ensure_get_int64_return (*kustomer_ensure_get_int64_dynamic_t)(void *transactionPtr, char *productName, char *claim);
+typedef long long unsigned int (*kustomer_ensure_ensure_int64_dynamic_t)(void *transactionPtr, char *productName, char *claim, long long value);
+typedef long long unsigned int (*kustomer_ensure_ensure_int64_op_dynamic_t)(void *transactionPtr, char *productName, char *claim, long long value, int opCode);
+typedef struct kustomer_ensure_get_float64_return (*kustomer_ensure_get_float64_dynamic_t)(void *transactionPtr, char *productName, char *claim);
+typedef long long unsigned int (*kustomer_ensure_ensure_float64_dynamic_t)(void *transactionPtr, char *productName, char *claim, double value);
+typedef long long unsigned int (*kustomer_ensure_ensure_float64_op_dynamic_t)(void *transactionPtr, char *productName, char *claim, double value, int opCode);
+kustomer_err_numeric_text_dynamic_t kustomer_err_numeric_text_dynamic = NULL;
+kustomer_initialize_dynamic_t kustomer_initialize_dynamic = NULL;
+kustomer_uninitialize_dynamic_t kustomer_uninitialize_dynamic = NULL;
+kustomer_wait_until_ready_dynamic_t kustomer_wait_until_ready_dynamic = NULL;
+kustomer_begin_ensure_dynamic_t kustomer_begin_ensure_dynamic = NULL;
+kustomer_end_ensure_dynamic_t kustomer_end_ensure_dynamic = NULL;
+kustomer_ensure_set_allow_untrusted_dynamic_t kustomer_ensure_set_allow_untrusted_dynamic = NULL;
+kustomer_ensure_ok_dynamic_t kustomer_ensure_ok_dynamic = NULL;
+kustomer_ensure_get_bool_dynamic_t kustomer_ensure_get_bool_dynamic = NULL;
+kustomer_ensure_ensure_bool_dynamic_t kustomer_ensure_ensure_bool_dynamic = NULL;
+kustomer_ensure_get_string_dynamic_t kustomer_ensure_get_string_dynamic = NULL;
+kustomer_ensure_ensure_string_dynamic_t kustomer_ensure_ensure_string_dynamic = NULL;
+kustomer_ensure_get_int64_dynamic_t kustomer_ensure_get_int64_dynamic = NULL;
+kustomer_ensure_ensure_int64_dynamic_t kustomer_ensure_ensure_int64_dynamic = NULL;
+kustomer_ensure_ensure_int64_op_dynamic_t kustomer_ensure_ensure_int64_op_dynamic = NULL;
+kustomer_ensure_get_float64_dynamic_t kustomer_ensure_get_float64_dynamic = NULL;
+kustomer_ensure_ensure_float64_dynamic_t kustomer_ensure_ensure_float64_dynamic = NULL;
+kustomer_ensure_ensure_float64_op_dynamic_t kustomer_ensure_ensure_float64_op_dynamic = NULL;
+
+// Global signleton to remember dlopen.
+int kustomer_so_loaded = 0;
+
+// Module initializer.
+int load_so()
+{
+	if (kustomer_so_loaded == 1) {
+		return KUSTOMER_ERRSTATUSSUCCESS;
+	}
+
+	void* libkustomer_library_handle = dlopen(PHP_KUSTOMER_SO, RTLD_NOW);
+	if (libkustomer_library_handle == NULL) {
+		zend_throw_exception_ex(phpkustomer_NumericException_ce, KUSTOMER_ERRSTATUSTIMEOUT, "%s", "Could not load libkustomer.so.0 library");
+		return KUSTOMER_ERRSTATUSTIMEOUT;
+	}
+	dlerror();
+
+	kustomer_err_numeric_text_dynamic = (kustomer_err_numeric_text_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_err_numeric_text");
+	if (kustomer_err_numeric_text_dynamic == NULL) {
+		zend_throw_exception_ex(phpkustomer_NumericException_ce, KUSTOMER_ERRSTATUSTIMEOUT, "Could not load expected function from library");
+		return KUSTOMER_ERRSTATUSTIMEOUT;
+	}
+
+	kustomer_initialize_dynamic = (kustomer_initialize_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_initialize");
+	if (kustomer_initialize_dynamic == NULL) {
+		zend_throw_exception_ex(phpkustomer_NumericException_ce, KUSTOMER_ERRSTATUSTIMEOUT, "Could not load expected function from library");
+		return KUSTOMER_ERRSTATUSTIMEOUT;
+	}
+	kustomer_uninitialize_dynamic = (kustomer_uninitialize_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_uninitialize");
+	kustomer_wait_until_ready_dynamic = (kustomer_wait_until_ready_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_wait_until_ready");
+	kustomer_begin_ensure_dynamic = (kustomer_begin_ensure_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_begin_ensure");
+	kustomer_end_ensure_dynamic = (kustomer_end_ensure_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_end_ensure");
+	kustomer_ensure_set_allow_untrusted_dynamic = (kustomer_ensure_set_allow_untrusted_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_ensure_set_allow_untrusted");
+	kustomer_ensure_ok_dynamic = (kustomer_ensure_ok_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_ensure_ok");
+	kustomer_ensure_get_bool_dynamic = (kustomer_ensure_get_bool_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_ensure_get_bool");
+	kustomer_ensure_ensure_bool_dynamic = (kustomer_ensure_ensure_bool_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_ensure_ensure_bool");
+	kustomer_ensure_get_string_dynamic = (kustomer_ensure_get_string_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_ensure_get_string");
+	kustomer_ensure_ensure_string_dynamic = (kustomer_ensure_ensure_string_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_ensure_ensure_string");
+	kustomer_ensure_get_int64_dynamic = (kustomer_ensure_get_int64_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_ensure_get_int64");
+	kustomer_ensure_ensure_int64_dynamic = (kustomer_ensure_ensure_int64_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_ensure_ensure_int64");
+	kustomer_ensure_ensure_int64_op_dynamic = (kustomer_ensure_ensure_int64_op_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_ensure_ensure_int64_op");
+	kustomer_ensure_get_float64_dynamic = (kustomer_ensure_get_float64_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_ensure_get_float64");
+	kustomer_ensure_ensure_float64_dynamic = (kustomer_ensure_ensure_float64_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_ensure_ensure_float64");
+	kustomer_ensure_ensure_float64_op_dynamic = (kustomer_ensure_ensure_float64_op_dynamic_t)dlsym(libkustomer_library_handle, "ustomer_ensure_ensure_float64_op");
+
+	kustomer_so_loaded = 1;
+	return KUSTOMER_ERRSTATUSSUCCESS;
+}
+
 // Implement our functions.
 PHP_FUNCTION(kustomer_initialize)
 {
@@ -113,7 +200,12 @@ PHP_FUNCTION(kustomer_initialize)
 
 	int res;
 
-	if ((res = kustomer_initialize(productName)) != KUSTOMER_ERRSTATUSSUCCESS) {
+	if ((res = load_so()) != KUSTOMER_ERRSTATUSSUCCESS) {
+		PHPKUSTOMER_THROW(res);
+		return;
+	}
+
+	if ((res = kustomer_initialize_dynamic(productName)) != KUSTOMER_ERRSTATUSSUCCESS) {
 		PHPKUSTOMER_THROW(res);
 		return;
 	}
@@ -126,7 +218,12 @@ PHP_FUNCTION(kustomer_uninitialize)
 
 	int res;
 
-	if ((res = kustomer_uninitialize()) != KUSTOMER_ERRSTATUSSUCCESS) {
+	if ((res = load_so()) != KUSTOMER_ERRSTATUSSUCCESS) {
+		PHPKUSTOMER_THROW(res);
+		return;
+	}
+
+	if ((res = kustomer_uninitialize_dynamic()) != KUSTOMER_ERRSTATUSSUCCESS) {
 		PHPKUSTOMER_THROW(res);
 		return;
 	}
@@ -142,7 +239,12 @@ PHP_FUNCTION(kustomer_wait_until_ready)
 
 	int res;
 
-	if ((res = kustomer_wait_until_ready((long long unsigned int)timeout)) != KUSTOMER_ERRSTATUSSUCCESS) {
+	if ((res = load_so()) != KUSTOMER_ERRSTATUSSUCCESS) {
+		PHPKUSTOMER_THROW(res);
+		return;
+	}
+
+	if ((res = kustomer_wait_until_ready_dynamic((long long unsigned int)timeout)) != KUSTOMER_ERRSTATUSSUCCESS) {
 		PHPKUSTOMER_THROW(res);
 		return;
 	}
@@ -172,9 +274,16 @@ PHP_FUNCTION(kustomer_begin_ensure)
 	ZEND_PARSE_PARAMETERS_START(0, 0)
 	ZEND_PARSE_PARAMETERS_END();
 
+	int so;
+
+	if ((so = load_so()) != KUSTOMER_ERRSTATUSSUCCESS) {
+		PHPKUSTOMER_THROW(so);
+		return;
+	}
+
 	struct kustomer_begin_ensure_return res;
 
-	res = kustomer_begin_ensure();
+	res = kustomer_begin_ensure_dynamic();
 
 	if (res.r0 != KUSTOMER_ERRSTATUSSUCCESS) {
 		PHPKUSTOMER_THROW(res.r0);
@@ -190,7 +299,7 @@ PHP_FUNCTION(kustomer_begin_ensure)
 
 #ifdef PHPKUSTOMER_ALLOW_UNTRUSTED
 	// NOTE(longsleep): The next line might be handy for development.
-	kustomer_ensure_set_allow_untrusted(kpc->kpc_ptr, 1);
+	kustomer_ensure_set_allow_untrusted_dynamic(kpc->kpc_ptr, 1);
 #endif
 
 	RETURN_OBJ(obj);
@@ -204,11 +313,17 @@ PHP_FUNCTION(kustomer_end_ensure)
 		Z_PARAM_OBJECT_OF_CLASS(kpc_zv, phpkustomer_KopanoProductClaims_ce)
 	ZEND_PARSE_PARAMETERS_END();
 
+	int res;
+
+	if ((res = load_so()) != KUSTOMER_ERRSTATUSSUCCESS) {
+		PHPKUSTOMER_THROW(res);
+		return;
+	}
+
 	phpkustomer_KopanoProductClaims_t *kpc;
 	kpc = Z_PHPKUSTOMER_KOPANOPRODUCTCLAIMS_P(kpc_zv);
 
-	int res;
-	res = kustomer_end_ensure(kpc->kpc_ptr);
+	res = kustomer_end_ensure_dynamic(kpc->kpc_ptr);
 
 	kpc->kpc_ptr = NULL;
 
@@ -228,12 +343,17 @@ PHP_FUNCTION(kustomer_ensure_ok)
 		Z_PARAM_STR(productName)
 	ZEND_PARSE_PARAMETERS_END();
 
+	int res;
+
+	if ((res = load_so()) != KUSTOMER_ERRSTATUSSUCCESS) {
+		PHPKUSTOMER_THROW(res);
+		return;
+	}
+
 	phpkustomer_KopanoProductClaims_t *kpc;
 	kpc = Z_PHPKUSTOMER_KOPANOPRODUCTCLAIMS_P(kpc_zv);
 
-	int res;
-
-	res = kustomer_ensure_ok(kpc->kpc_ptr, ZSTR_VAL(productName));
+	res = kustomer_ensure_ok_dynamic(kpc->kpc_ptr, ZSTR_VAL(productName));
 
 	zend_string_release(productName);
 
@@ -255,12 +375,19 @@ PHP_FUNCTION(kustomer_ensure_get_bool)
 		Z_PARAM_STR(claim)
 	ZEND_PARSE_PARAMETERS_END();
 
+	int so;
+
+	if ((so = load_so()) != KUSTOMER_ERRSTATUSSUCCESS) {
+		PHPKUSTOMER_THROW(so);
+		return;
+	}
+
 	phpkustomer_KopanoProductClaims_t *kpc;
 	kpc = Z_PHPKUSTOMER_KOPANOPRODUCTCLAIMS_P(kpc_zv);
 
 	struct kustomer_ensure_get_bool_return res;
 
-	res = kustomer_ensure_get_bool(kpc->kpc_ptr, ZSTR_VAL(productName), ZSTR_VAL(claim));
+	res = kustomer_ensure_get_bool_dynamic(kpc->kpc_ptr, ZSTR_VAL(productName), ZSTR_VAL(claim));
 
 	zend_string_release(productName);
 	zend_string_release(claim);
@@ -287,12 +414,17 @@ PHP_FUNCTION(kustomer_ensure_ensure_bool)
 		Z_PARAM_BOOL(value)
 	ZEND_PARSE_PARAMETERS_END();
 
+	int res;
+
+	if ((res = load_so()) != KUSTOMER_ERRSTATUSSUCCESS) {
+		PHPKUSTOMER_THROW(res);
+		return;
+	}
+
 	phpkustomer_KopanoProductClaims_t *kpc;
 	kpc = Z_PHPKUSTOMER_KOPANOPRODUCTCLAIMS_P(kpc_zv);
 
-	int res;
-
-	res = kustomer_ensure_ensure_bool(kpc->kpc_ptr, ZSTR_VAL(productName), ZSTR_VAL(claim), (int)value);
+	res = kustomer_ensure_ensure_bool_dynamic(kpc->kpc_ptr, ZSTR_VAL(productName), ZSTR_VAL(claim), (int)value);
 
 	zend_string_release(productName);
 	zend_string_release(claim);
@@ -315,12 +447,19 @@ PHP_FUNCTION(kustomer_ensure_get_string)
 		Z_PARAM_STR(claim)
 	ZEND_PARSE_PARAMETERS_END();
 
+	int so;
+
+	if ((so = load_so()) != KUSTOMER_ERRSTATUSSUCCESS) {
+		PHPKUSTOMER_THROW(so);
+		return;
+	}
+
 	phpkustomer_KopanoProductClaims_t *kpc;
 	kpc = Z_PHPKUSTOMER_KOPANOPRODUCTCLAIMS_P(kpc_zv);
 
 	struct kustomer_ensure_get_string_return res;
 
-	res = kustomer_ensure_get_string(kpc->kpc_ptr, ZSTR_VAL(productName), ZSTR_VAL(claim));
+	res = kustomer_ensure_get_string_dynamic(kpc->kpc_ptr, ZSTR_VAL(productName), ZSTR_VAL(claim));
 
 	zend_string_release(productName);
 	zend_string_release(claim);
@@ -347,12 +486,17 @@ PHP_FUNCTION(kustomer_ensure_ensure_string)
 		Z_PARAM_STR(value)
 	ZEND_PARSE_PARAMETERS_END();
 
+	int res;
+
+	if ((res = load_so()) != KUSTOMER_ERRSTATUSSUCCESS) {
+		PHPKUSTOMER_THROW(res);
+		return;
+	}
+
 	phpkustomer_KopanoProductClaims_t *kpc;
 	kpc = Z_PHPKUSTOMER_KOPANOPRODUCTCLAIMS_P(kpc_zv);
 
-	int res;
-
-	res = kustomer_ensure_ensure_string(kpc->kpc_ptr, ZSTR_VAL(productName), ZSTR_VAL(claim), ZSTR_VAL(value));
+	res = kustomer_ensure_ensure_string_dynamic(kpc->kpc_ptr, ZSTR_VAL(productName), ZSTR_VAL(claim), ZSTR_VAL(value));
 
 	zend_string_release(productName);
 	zend_string_release(claim);
@@ -376,12 +520,19 @@ PHP_FUNCTION(kustomer_ensure_get_int64)
 		Z_PARAM_STR(claim)
 	ZEND_PARSE_PARAMETERS_END();
 
+	int so;
+
+	if ((so = load_so()) != KUSTOMER_ERRSTATUSSUCCESS) {
+		PHPKUSTOMER_THROW(so);
+		return;
+	}
+
 	phpkustomer_KopanoProductClaims_t *kpc;
 	kpc = Z_PHPKUSTOMER_KOPANOPRODUCTCLAIMS_P(kpc_zv);
 
 	struct kustomer_ensure_get_int64_return res;
 
-	res = kustomer_ensure_get_int64(kpc->kpc_ptr, ZSTR_VAL(productName), ZSTR_VAL(claim));
+	res = kustomer_ensure_get_int64_dynamic(kpc->kpc_ptr, ZSTR_VAL(productName), ZSTR_VAL(claim));
 
 	zend_string_release(productName);
 	zend_string_release(claim);
@@ -408,12 +559,17 @@ PHP_FUNCTION(kustomer_ensure_ensure_int64)
 		Z_PARAM_LONG(value)
 	ZEND_PARSE_PARAMETERS_END();
 
+	int res;
+
+	if ((res = load_so()) != KUSTOMER_ERRSTATUSSUCCESS) {
+		PHPKUSTOMER_THROW(res);
+		return;
+	}
+
 	phpkustomer_KopanoProductClaims_t *kpc;
 	kpc = Z_PHPKUSTOMER_KOPANOPRODUCTCLAIMS_P(kpc_zv);
 
-	int res;
-
-	res = kustomer_ensure_ensure_int64(kpc->kpc_ptr, ZSTR_VAL(productName), ZSTR_VAL(claim), (long long int)value);
+	res = kustomer_ensure_ensure_int64_dynamic(kpc->kpc_ptr, ZSTR_VAL(productName), ZSTR_VAL(claim), (long long int)value);
 
 	zend_string_release(productName);
 	zend_string_release(claim);
@@ -440,12 +596,17 @@ PHP_FUNCTION(kustomer_ensure_ensure_int64_op)
 		Z_PARAM_LONG(opCode)
 	ZEND_PARSE_PARAMETERS_END();
 
+	int res;
+
+	if ((res = load_so()) != KUSTOMER_ERRSTATUSSUCCESS) {
+		PHPKUSTOMER_THROW(res);
+		return;
+	}
+
 	phpkustomer_KopanoProductClaims_t *kpc;
 	kpc = Z_PHPKUSTOMER_KOPANOPRODUCTCLAIMS_P(kpc_zv);
 
-	int res;
-
-	res = kustomer_ensure_ensure_int64_op(kpc->kpc_ptr, ZSTR_VAL(productName), ZSTR_VAL(claim), (long long int)value, (int)opCode);
+	res = kustomer_ensure_ensure_int64_op_dynamic(kpc->kpc_ptr, ZSTR_VAL(productName), ZSTR_VAL(claim), (long long int)value, (int)opCode);
 
 	zend_string_release(productName);
 	zend_string_release(claim);
@@ -468,12 +629,19 @@ PHP_FUNCTION(kustomer_ensure_get_float64)
 		Z_PARAM_STR(claim)
 	ZEND_PARSE_PARAMETERS_END();
 
+	int so;
+
+	if ((so = load_so()) != KUSTOMER_ERRSTATUSSUCCESS) {
+		PHPKUSTOMER_THROW(so);
+		return;
+	}
+
 	phpkustomer_KopanoProductClaims_t *kpc;
 	kpc = Z_PHPKUSTOMER_KOPANOPRODUCTCLAIMS_P(kpc_zv);
 
 	struct kustomer_ensure_get_float64_return res;
 
-	res = kustomer_ensure_get_float64(kpc->kpc_ptr, ZSTR_VAL(productName), ZSTR_VAL(claim));
+	res = kustomer_ensure_get_float64_dynamic(kpc->kpc_ptr, ZSTR_VAL(productName), ZSTR_VAL(claim));
 
 	zend_string_release(productName);
 	zend_string_release(claim);
@@ -500,12 +668,17 @@ PHP_FUNCTION(kustomer_ensure_ensure_float64)
 		Z_PARAM_DOUBLE(value)
 	ZEND_PARSE_PARAMETERS_END();
 
+	int res;
+
+	if ((res = load_so()) != KUSTOMER_ERRSTATUSSUCCESS) {
+		PHPKUSTOMER_THROW(res);
+		return;
+	}
+
 	phpkustomer_KopanoProductClaims_t *kpc;
 	kpc = Z_PHPKUSTOMER_KOPANOPRODUCTCLAIMS_P(kpc_zv);
 
-	int res;
-
-	res = kustomer_ensure_ensure_float64(kpc->kpc_ptr, ZSTR_VAL(productName), ZSTR_VAL(claim), value);
+	res = kustomer_ensure_ensure_float64_dynamic(kpc->kpc_ptr, ZSTR_VAL(productName), ZSTR_VAL(claim), value);
 
 	zend_string_release(productName);
 	zend_string_release(claim);
@@ -532,12 +705,17 @@ PHP_FUNCTION(kustomer_ensure_ensure_float64_op)
 		Z_PARAM_LONG(opCode)
 	ZEND_PARSE_PARAMETERS_END();
 
+	int res;
+
+	if ((res = load_so()) != KUSTOMER_ERRSTATUSSUCCESS) {
+		PHPKUSTOMER_THROW(res);
+		return;
+	}
+
 	phpkustomer_KopanoProductClaims_t *kpc;
 	kpc = Z_PHPKUSTOMER_KOPANOPRODUCTCLAIMS_P(kpc_zv);
 
-	int res;
-
-	res = kustomer_ensure_ensure_float64_op(kpc->kpc_ptr, ZSTR_VAL(productName), ZSTR_VAL(claim), value, (int)opCode);
+	res = kustomer_ensure_ensure_float64_op_dynamic(kpc->kpc_ptr, ZSTR_VAL(productName), ZSTR_VAL(claim), value, (int)opCode);
 
 	zend_string_release(productName);
 	zend_string_release(claim);

@@ -4,12 +4,11 @@ AC_ARG_ENABLE([kustomer_allow_untrusted],
 	AS_HELP_STRING([--enable-kustomer-allow-untrusted], [Enable Kustomer to allow untrusted ensuring, use for development only]))
 
 if test "$PHP_KUSTOMER" != "no"; then
-	if test -z "$kustomer_INCLUDE" -o -z "$kustomer_LIBRARY" ; then
+	if test -z "$kustomer_INCLUDE" ; then
 		AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
 		AC_MSG_CHECKING(for libkustomer)
 		if test -x "$PKG_CONFIG" && $PKG_CONFIG --exists libkustomer ; then
 			kustomer_INCLUDE=`$PKG_CONFIG libkustomer --variable=includedir`
-			kustomer_LIBRARY=`$PKG_CONFIG libkustomer --libs`
 			kustomer_VERSION=`$PKG_CONFIG libkustomer --modversion`
 			AC_MSG_RESULT($kustomer_VERSION)
 		else
@@ -17,10 +16,8 @@ if test "$PHP_KUSTOMER" != "no"; then
 		fi
 	fi
 
-	PHP_EVAL_LIBLINE($kustomer_LIBRARY, KUSTOMER_SHARED_LIBADD)
 	PHP_ADD_INCLUDE($kustomer_INCLUDE)
 
-	PHP_SUBST(KUSTOMER_SHARED_LIBADD)
 	AC_DEFINE(HAVE_KUSTOMER, 1, [ ])
 	PHP_NEW_EXTENSION(kustomer, ext/php_kustomer.c, $ext_shared)
 fi

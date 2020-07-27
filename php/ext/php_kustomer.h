@@ -4,7 +4,8 @@
  */
 
 #define PHP_KUSTOMER_EXTNAME "kustomer"
-#define PHP_KUSTOMER_VERSION "0.2.0"
+#define PHP_KUSTOMER_VERSION "0.3.0"
+#define PHP_KUSTOMER_SO "libkustomer.so.0"
 
 // Exports.
 PHP_FUNCTION(kustomer_initialize);
@@ -28,7 +29,7 @@ PHP_FUNCTION(kustomer_ensure_ensure_float64_op);
 zend_class_entry *phpkustomer_NumericException_ce;
 
 #define PHPKUSTOMER_THROW(res) \
-	(zend_throw_exception_ex(phpkustomer_NumericException_ce, res, "%s (:0x%x)",kustomer_err_numeric_text(res), res))
+	(zend_throw_exception_ex(phpkustomer_NumericException_ce, res, "%s (:0x%x)",kustomer_err_numeric_text_dynamic(res), res))
 
 static zend_object_handlers phpkustomer_KopanoProductClaims_object_handlers;
 
