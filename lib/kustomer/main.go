@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"stash.kopano.io/kc/libkustomer" //nolint:goimports // False positive.
+	"stash.kopano.io/kc/libkustomer/version"
 )
 
 var (
@@ -34,6 +35,14 @@ func init() { //nolint:gochecknoinits // This library uses init to set up env.
 		debug = true
 		initializedLogger = getDefaultDebugLogger()
 	}
+}
+
+func Version() string {
+	return version.Version
+}
+
+func BuildDate() string {
+	return version.BuildDate
 }
 
 // SetAutoRefresh toggles weather or not this library should enable auto

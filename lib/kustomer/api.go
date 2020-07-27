@@ -34,6 +34,16 @@ import (
 	"stash.kopano.io/kc/libkustomer"
 )
 
+//export kustomer_version
+func kustomer_version() *C.char {
+	return C.CString(Version())
+}
+
+//export kustomer_build_date
+func kustomer_build_date() *C.char {
+	return C.CString(BuildDate())
+}
+
 //export kustomer_set_autorefresh
 func kustomer_set_autorefresh(flagCInt C.int) C.ulonglong {
 	var flag bool

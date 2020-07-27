@@ -42,9 +42,6 @@ type Kustomer struct {
 
 	apiPath string
 
-	version   string
-	buildDate string
-
 	updated                    chan struct{}
 	currentKopanoProductClaims *api.ClaimsKopanoProductsResponse
 
@@ -63,9 +60,6 @@ func New(config *Config) (*Kustomer, error) {
 		logger:      config.Logger,
 		debug:       config.Debug,
 		autoRefresh: config.AutoRefresh,
-
-		version:   version.Version,
-		buildDate: version.BuildDate,
 
 		updated: make(chan struct{}),
 		currentKopanoProductClaims: &api.ClaimsKopanoProductsResponse{
@@ -91,11 +85,11 @@ func New(config *Config) (*Kustomer, error) {
 }
 
 func (k *Kustomer) Version() string {
-	return k.version
+	return version.Version
 }
 
 func (k *Kustomer) BuildDate() string {
-	return k.buildDate
+	return version.BuildDate
 }
 
 func (k *Kustomer) Initialize(ctx context.Context, productName *string) error {
