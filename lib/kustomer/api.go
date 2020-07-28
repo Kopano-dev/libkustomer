@@ -434,3 +434,38 @@ func kustomer_ensure_ensure_float64_op(transactionPtr unsafe.Pointer, productNam
 
 	return kustomer.StatusSuccess
 }
+
+//export kustomer_ensure_get_stringArray_json
+func kustomer_ensure_get_stringArray_json(transactionPtr unsafe.Pointer, productNameCString, claimCString *C.char) (C.ulonglong, unsafe.Pointer) {
+	kpc := restoreKopanoProductClaimsFromPointer(transactionPtr)
+	if kpc == nil {
+		return asKnownErrorOrUnknown(kustomer.ErrEnsureInvalidTransaction), nil
+	}
+
+	value, err := kpc.GetStringArrayValues(C.GoString(productNameCString), C.GoString(claimCString))
+	if err != nil {
+		return asKnownErrorOrUnknown(err), nil
+	}
+
+	b, err := json.Marshal(value)
+	if err != nil {
+		return asKnownErrorOrUnknown(err), nil
+	}
+
+	return kustomer.StatusSuccess, C.CBytes(b)
+}
+
+//export kustomer_ensure_ensure_stringArray_value
+func kustomer_ensure_ensure_stringArray_value(transactionPtr unsafe.Pointer, productNameCString, claimCString, valueCString *C.char) C.ulonglong {
+	kpc := restoreKopanoProductClaimsFromPointer(transactionPtr)
+	if kpc == nil {
+		return asKnownErrorOrUnknown(kustomer.ErrEnsureInvalidTransaction)
+	}
+
+	err := kpc.EnsureStringArrayValues(C.GoString(productNameCString), C.GoString(claimCString), C.GoString(valueCString))
+	if err != nil {
+		return asKnownErrorOrUnknown(err)
+	}
+
+	return kustomer.StatusSuccess
+}

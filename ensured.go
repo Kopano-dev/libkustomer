@@ -277,3 +277,38 @@ func (kpc *KopanoProductClaims) EnsureFloat64WithOperator(product, claim string,
 	}
 	return ErrEnsureProductClaimValueMismatch
 }
+
+func (kpc *KopanoProductClaims) GetStringArrayValues(product, claim string) ([]string, error) {
+	v, err := kpc.ensureValue(product, claim)
+	if err != nil {
+		return nil, err
+	}
+
+	tv, ok := v.([]string)
+	if !ok {
+		return nil, ErrEnsureProductClaimValueTypeMismatch
+	}
+	return tv, nil
+}
+
+func (kpc *KopanoProductClaims) EnsureStringArrayValues(product, claim string, value ...string) error {
+	tv, err := kpc.GetStringArrayValues(product, claim)
+	if err != nil {
+		return err
+	}
+
+	for _, v := range value {
+		found := false
+		for _, e := range tv {
+			if v == e {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return ErrEnsureProductClaimValueMismatch
+		}
+	}
+
+	return nil
+}
