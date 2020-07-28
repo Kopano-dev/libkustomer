@@ -12,6 +12,7 @@ PHP_FUNCTION(kustomer_initialize);
 PHP_FUNCTION(kustomer_uninitialize);
 PHP_FUNCTION(kustomer_wait_until_ready);
 PHP_FUNCTION(kustomer_begin_ensure);
+PHP_FUNCTION(kustomer_instant_ensure);
 PHP_FUNCTION(kustomer_end_ensure);
 PHP_FUNCTION(kustomer_ensure_ok);
 PHP_FUNCTION(kustomer_ensure_get_bool);

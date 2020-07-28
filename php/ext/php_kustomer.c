@@ -31,6 +31,12 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_kustomer_begin_ensure, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_kustomer_instant_ensure, 0, 0, 3)
+	ZEND_ARG_TYPE_INFO(0, productName, IS_STRING, 1)
+	ZEND_ARG_TYPE_INFO(0, productUserAgent, IS_STRING, 1)
+	ZEND_ARG_TYPE_INFO(0, timeout, IS_LONG, 1)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_kustomer_end_ensure, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, transaction, IS_OBJECT, 0)
 ZEND_END_ARG_INFO()
@@ -98,6 +104,7 @@ typedef long long unsigned int (*kustomer_initialize_dynamic_t)(char *productNam
 typedef long long unsigned int (*kustomer_uninitialize_dynamic_t)();
 typedef long long unsigned int (*kustomer_wait_until_ready_dynamic_t)(unsigned long long timeout);
 typedef struct kustomer_begin_ensure_return (*kustomer_begin_ensure_dynamic_t)();
+typedef struct kustomer_instant_ensure_return (*kustomer_instant_ensure_dynamic_t)(char *productName, char *productUserAgent, unsigned long long timeout);
 typedef long long unsigned int (*kustomer_end_ensure_dynamic_t)(void *transactionPtr);
 typedef long long unsigned int (*kustomer_ensure_set_allow_untrusted_dynamic_t)(void *transactionPtr, int flag);
 typedef long long unsigned int (*kustomer_ensure_ok_dynamic_t)(void *transactionPtr, char *productName);
@@ -116,6 +123,7 @@ kustomer_initialize_dynamic_t kustomer_initialize_dynamic = NULL;
 kustomer_uninitialize_dynamic_t kustomer_uninitialize_dynamic = NULL;
 kustomer_wait_until_ready_dynamic_t kustomer_wait_until_ready_dynamic = NULL;
 kustomer_begin_ensure_dynamic_t kustomer_begin_ensure_dynamic = NULL;
+kustomer_instant_ensure_dynamic_t kustomer_instant_ensure_dynamic = NULL;
 kustomer_end_ensure_dynamic_t kustomer_end_ensure_dynamic = NULL;
 kustomer_ensure_set_allow_untrusted_dynamic_t kustomer_ensure_set_allow_untrusted_dynamic = NULL;
 kustomer_ensure_ok_dynamic_t kustomer_ensure_ok_dynamic = NULL;
@@ -161,6 +169,7 @@ int load_so()
 	kustomer_uninitialize_dynamic = (kustomer_uninitialize_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_uninitialize");
 	kustomer_wait_until_ready_dynamic = (kustomer_wait_until_ready_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_wait_until_ready");
 	kustomer_begin_ensure_dynamic = (kustomer_begin_ensure_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_begin_ensure");
+	kustomer_instant_ensure_dynamic = (kustomer_instant_ensure_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_instant_ensure");
 	kustomer_end_ensure_dynamic = (kustomer_end_ensure_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_end_ensure");
 	kustomer_ensure_set_allow_untrusted_dynamic = (kustomer_ensure_set_allow_untrusted_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_ensure_set_allow_untrusted");
 	kustomer_ensure_ok_dynamic = (kustomer_ensure_ok_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_ensure_ok");
@@ -304,6 +313,72 @@ PHP_FUNCTION(kustomer_begin_ensure)
 
 	RETURN_OBJ(obj);
 }
+
+PHP_FUNCTION(kustomer_instant_ensure)
+{
+
+	zval *productNameVal;
+	zval *productUserAgentVal;
+	zend_long timeout;
+
+	ZEND_PARSE_PARAMETERS_START(3, 3)
+		Z_PARAM_ZVAL(productNameVal)
+		Z_PARAM_ZVAL(productUserAgentVal)
+		Z_PARAM_LONG(timeout)
+	ZEND_PARSE_PARAMETERS_END();
+
+	char *productName;
+	if (Z_TYPE_P(productNameVal) == IS_STRING) {
+		productName = Z_STRVAL_P(productNameVal);
+	} else if(Z_TYPE_P(productNameVal) == IS_NULL) {
+		productName = NULL;
+	} else {
+		php_error_docref(NULL, E_WARNING, "unexpected argument type");
+		return;
+	}
+
+	char *productUserAgent;
+	if (Z_TYPE_P(productUserAgentVal) == IS_STRING) {
+		productUserAgent = Z_STRVAL_P(productUserAgentVal);
+	} else if(Z_TYPE_P(productUserAgentVal) == IS_NULL) {
+		productUserAgent = NULL;
+	} else {
+		php_error_docref(NULL, E_WARNING, "unexpected argument type");
+		return;
+	}
+
+	int so;
+
+	if ((so = load_so()) != KUSTOMER_ERRSTATUSSUCCESS) {
+		PHPKUSTOMER_THROW(so);
+		return;
+	}
+
+	struct kustomer_instant_ensure_return res;
+
+	res = kustomer_instant_ensure_dynamic(productName, productUserAgent, (long long unsigned int)timeout);
+
+	if (res.r0 != KUSTOMER_ERRSTATUSSUCCESS) {
+		PHPKUSTOMER_THROW(res.r0);
+		return;
+	}
+
+	zend_object *obj;
+	obj = phpkustomer_KopanoProductClaims_create_handler(phpkustomer_KopanoProductClaims_ce);
+
+	phpkustomer_KopanoProductClaims_t *kpc;
+	kpc = PHPKUSTOMER_KOPANOPRODUCTCLAIMS_P(obj);
+	kpc->kpc_ptr = res.r1;
+
+#ifdef PHPKUSTOMER_ALLOW_UNTRUSTED
+	// NOTE(longsleep): The next line might be handy for development.
+	kustomer_ensure_set_allow_untrusted_dynamic(kpc->kpc_ptr, 1);
+#endif
+
+	RETURN_OBJ(obj);
+}
+
+
 
 PHP_FUNCTION(kustomer_end_ensure)
 {
@@ -778,6 +853,7 @@ zend_function_entry kustomer_php_functions[] = {
 	PHP_FE(kustomer_uninitialize, arginfo_kustomer_uninitialize)
 	PHP_FE(kustomer_wait_until_ready, arginfo_kustomer_wait_until_ready)
 	PHP_FE(kustomer_begin_ensure, arginfo_kustomer_begin_ensure)
+	PHP_FE(kustomer_instant_ensure, arginfo_kustomer_instant_ensure)
 	PHP_FE(kustomer_end_ensure, arginfo_kustomer_end_ensure)
 	PHP_FE(kustomer_ensure_ok, arginfo_kustomer_ensure_ok)
 	PHP_FE(kustomer_ensure_get_bool, arginfo_kustomer_ensure_get)
