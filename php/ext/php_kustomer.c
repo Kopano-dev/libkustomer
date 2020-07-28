@@ -111,6 +111,7 @@ ZEND_END_ARG_INFO()
 typedef char* (*kustomer_err_numeric_text_dynamic_t)(unsigned long long errNum);
 typedef char* (*kustomer_version_dynamic_t)();
 typedef char* (*kustomer_build_date_dynamic_t)();
+typedef long long unsigned int (*kustomer_set_logger_dynamic_t)(kustomer_cb_func_log_s cb, int debug);
 typedef long long unsigned int (*kustomer_initialize_dynamic_t)(char *productName);
 typedef long long unsigned int (*kustomer_uninitialize_dynamic_t)();
 typedef long long unsigned int (*kustomer_wait_until_ready_dynamic_t)(unsigned long long timeout);
@@ -133,6 +134,7 @@ typedef long long unsigned int (*kustomer_ensure_ensure_stringArray_value_dynami
 kustomer_err_numeric_text_dynamic_t kustomer_err_numeric_text_dynamic = NULL;
 kustomer_version_dynamic_t kustomer_version_dynamic = NULL;
 kustomer_build_date_dynamic_t kustomer_build_date_dynamic = NULL;
+kustomer_set_logger_dynamic_t kustomer_set_logger_dynamic = NULL;
 kustomer_initialize_dynamic_t kustomer_initialize_dynamic = NULL;
 kustomer_uninitialize_dynamic_t kustomer_uninitialize_dynamic = NULL;
 kustomer_wait_until_ready_dynamic_t kustomer_wait_until_ready_dynamic = NULL;
@@ -153,11 +155,33 @@ kustomer_ensure_ensure_float64_dynamic_t kustomer_ensure_ensure_float64_dynamic 
 kustomer_ensure_ensure_float64_op_dynamic_t kustomer_ensure_ensure_float64_op_dynamic = NULL;
 kustomer_ensure_ensure_stringArray_value_dynamic_t kustomer_ensure_ensure_stringArray_value_dynamic = NULL;
 
+// Log delegator.
+static void log_to_php(char *s)
+{
+	php_error_docref(NULL, E_NOTICE, "%s", s);
+	free(s);
+}
+
+PHP_INI_MH(on_debug_change) {
+	int debug = -1;
+	if (ZSTR_VAL(new_value) != "") {
+		debug = atoi(ZSTR_VAL(new_value));
+		if (debug > 1 || debug < -1) {
+			return FAILURE;
+		}
+	}
+	return SUCCESS;
+}
+
+PHP_INI_BEGIN()
+	PHP_INI_ENTRY("kustomer.debug", "-1", PHP_INI_ALL, on_debug_change)
+PHP_INI_END();
+
 // Global signleton to remember dlopen.
-int kustomer_so_loaded = 0;
+static int kustomer_so_loaded = 0;
 
 // Module initializer.
-int load_so()
+static int load_so()
 {
 	if (kustomer_so_loaded == 1) {
 		return KUSTOMER_ERRSTATUSSUCCESS;
@@ -187,6 +211,13 @@ int load_so()
 		zend_throw_exception_ex(phpkustomer_NumericException_ce, KUSTOMER_ERRSTATUSTIMEOUT, "Could not load expected function from library");
 		return KUSTOMER_ERRSTATUSTIMEOUT;
 	}
+
+	kustomer_set_logger_dynamic = (kustomer_set_logger_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_set_logger");
+	if (kustomer_set_logger_dynamic == NULL) {
+		zend_throw_exception_ex(phpkustomer_NumericException_ce, KUSTOMER_ERRSTATUSTIMEOUT, "Could not load expected function from library");
+		return KUSTOMER_ERRSTATUSTIMEOUT;
+	}
+	kustomer_set_logger_dynamic(log_to_php, INI_INT("kustomer.debug"));
 
 	kustomer_initialize_dynamic = (kustomer_initialize_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_initialize");
 	if (kustomer_initialize_dynamic == NULL) {
@@ -868,6 +899,8 @@ PHP_FUNCTION(kustomer_ensure_ensure_stringArray_value)
 /* {{{ PHP_MINIT_FUNCTION */
 PHP_MINIT_FUNCTION(kustomer_php)
 {
+	REGISTER_INI_ENTRIES();
+
 	zend_class_entry tmp_ne_ce;
 	INIT_CLASS_ENTRY(tmp_ne_ce, "KUSTOMER\\NumericException", NULL);
 #ifdef HAVE_SPL
@@ -911,6 +944,15 @@ PHP_MINIT_FUNCTION(kustomer_php)
 }
 /* }}} */
 
+
+/* {{{ PHP_MSHUTDOWN_FUNCTION */
+PHP_MSHUTDOWN_FUNCTION(kustomer_php) {
+	UNREGISTER_INI_ENTRIES();
+
+	return SUCCESS;
+}
+/* }}} */
+
 /* {{{ PHP_MINFO_FUNCTION */
 PHP_MINFO_FUNCTION(kustomer_php) {
 	int res = load_so();
@@ -926,6 +968,8 @@ PHP_MINFO_FUNCTION(kustomer_php) {
 	}
 	php_info_print_table_row(2, "libkustomer library version", buf);
 	php_info_print_table_end();
+
+	DISPLAY_INI_ENTRIES();
 }
 /* }}} */
 
@@ -960,7 +1004,7 @@ zend_module_entry kustomer_php_module_entry = {
 	PHP_KUSTOMER_EXTNAME,
 	kustomer_php_functions,
 	PHP_MINIT(kustomer_php),
-	NULL,
+	PHP_MSHUTDOWN(kustomer_php),
 	NULL,
 	NULL,
 	PHP_MINFO(kustomer_php),
