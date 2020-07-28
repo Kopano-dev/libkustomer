@@ -909,7 +909,7 @@ PHP_MINIT_FUNCTION(kustomer_php)
 	);
 #else
 	phpkustomer_NumericException_ce = zend_register_internal_class_ex(
-		&tmp_ce, zend_ce_exception
+		&tmp_ne_ce, zend_ce_exception
 	);
 #endif
 	// Attach all errors as class constants to our exception.
