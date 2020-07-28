@@ -164,7 +164,7 @@ static void log_to_php(char *s)
 
 PHP_INI_MH(on_debug_change) {
 	int debug = -1;
-	if (ZSTR_VAL(new_value) != "") {
+	if (ZSTR_LEN(new_value) > 0) {
 		debug = atoi(ZSTR_VAL(new_value));
 		if (debug > 1 || debug < -1) {
 			return FAILURE;
@@ -175,7 +175,7 @@ PHP_INI_MH(on_debug_change) {
 
 PHP_INI_BEGIN()
 	PHP_INI_ENTRY("kustomer.debug", "-1", PHP_INI_ALL, on_debug_change)
-PHP_INI_END();
+PHP_INI_END()
 
 // Global signleton to remember dlopen.
 static int kustomer_so_loaded = 0;
@@ -908,7 +908,7 @@ PHP_MINIT_FUNCTION(kustomer_php)
 		&tmp_ne_ce, spl_ce_RuntimeException
 	);
 #else
-	pykustomer_NumericException_ce = zend_register_internal_class_ex(
+	phpkustomer_NumericException_ce = zend_register_internal_class_ex(
 		&tmp_ce, zend_ce_exception
 	);
 #endif
