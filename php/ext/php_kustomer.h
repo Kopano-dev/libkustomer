@@ -4,7 +4,7 @@
  */
 
 #define PHP_KUSTOMER_EXTNAME "kustomer"
-#define PHP_KUSTOMER_VERSION "0.3.0"
+#define PHP_KUSTOMER_VERSION "0.4.0"
 #define PHP_KUSTOMER_SO "libkustomer.so.0"
 
 // Exports.
