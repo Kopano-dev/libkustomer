@@ -77,6 +77,22 @@ func kustomer_set_logger(cb C.kustomer_cb_func_log_s, debug C.int) C.ulonglong {
 	return kustomer.StatusSuccess
 }
 
+//export kustomer_set_productuseragent
+func kustomer_set_productuseragent(productUserAgentCString *C.char) C.ulonglong {
+	var productUserAgent *string
+	if productUserAgentCString != nil {
+		productUserAgentString := C.GoString(productUserAgentCString)
+		productUserAgent = &productUserAgentString
+	}
+
+	err := SetProductUserAgent(productUserAgent)
+	if err != nil {
+		return asKnownErrorOrUnknown(err)
+	}
+
+	return kustomer.StatusSuccess
+}
+
 //export kustomer_initialize
 func kustomer_initialize(productNameCString *C.char) C.ulonglong {
 	var productName *string
@@ -161,6 +177,29 @@ func kustomer_err_numeric_text(errNum C.ulonglong) *C.char {
 //export kustomer_begin_ensure
 func kustomer_begin_ensure() (statusNum C.ulonglong, transactionPtr unsafe.Pointer) {
 	kpc, err := CurrentKopanoProductClaims()
+	if err != nil {
+		return asKnownErrorOrUnknown(err), nil
+	}
+
+	transactionPtr = pointer.Save(kpc)
+
+	return kustomer.StatusSuccess, transactionPtr
+}
+
+//export kustomer_instant_ensure
+func kustomer_instant_ensure(productNameCString, productUserAgentCString *C.char, timeout C.ulonglong) (statusNum C.ulonglong, transactionPtr unsafe.Pointer) {
+	var productName *string
+	if productNameCString != nil {
+		productNameString := C.GoString(productNameCString)
+		productName = &productNameString
+	}
+	var productUserAgent *string
+	if productUserAgentCString != nil {
+		productUserAgentString := C.GoString(productUserAgentCString)
+		productUserAgent = &productUserAgentString
+	}
+
+	kpc, err := InstantEnsure(context.Background(), productName, productUserAgent, time.Duration(timeout)*time.Second)
 	if err != nil {
 		return asKnownErrorOrUnknown(err), nil
 	}

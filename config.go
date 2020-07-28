@@ -10,4 +10,6 @@ type Config struct {
 
 	Debug       bool
 	AutoRefresh bool
+
+	ProductUserAgent *string
 }

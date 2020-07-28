@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -34,9 +35,11 @@ type Kustomer struct {
 	ctx         context.Context
 	cancel      context.CancelFunc
 
-	httpClient *http.Client
+	httpClient       *http.Client
+	requestGenerator func(string, string, io.Reader) (*http.Request, error)
 
-	logger      Logger
+	logger Logger
+
 	debug       bool
 	autoRefresh bool
 
@@ -57,7 +60,8 @@ func New(config *Config) (*Kustomer, error) {
 	}
 
 	k := &Kustomer{
-		logger:      config.Logger,
+		logger: config.Logger,
+
 		debug:       config.Debug,
 		autoRefresh: config.AutoRefresh,
 
@@ -80,6 +84,8 @@ func New(config *Config) (*Kustomer, error) {
 			},
 		},
 	}
+
+	k.requestGenerator = newRequestGenerator(config.ProductUserAgent)
 
 	return k, nil
 }
@@ -154,7 +160,7 @@ func (k *Kustomer) Initialize(ctx context.Context, productName *string) error {
 					if debug {
 						logger.Printf("libkustomer claims watch start\n")
 					}
-					err := sse.Notify(uri.String(), k.httpClient, newRequestWithUserAgent, c)
+					err := sse.Notify(uri.String(), k.httpClient, k.requestGenerator, c)
 					e <- err
 				}()
 
@@ -359,7 +365,7 @@ func (k *Kustomer) fetchClaimsKopanoProducts(ctx context.Context, productName *s
 	}
 	uri.RawQuery = query.Encode()
 
-	request, err := newRequestWithUserAgent(http.MethodGet, uri.String(), nil)
+	request, err := k.requestGenerator(http.MethodGet, uri.String(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("API request could not be created: %w", err)
 	}
@@ -391,7 +397,7 @@ func (k *Kustomer) fetchClaims(ctx context.Context) (*api.ClaimsResponse, error)
 		Path:   "/api/v1/claims",
 	}
 
-	request, err := newRequestWithUserAgent(http.MethodGet, uri.String(), nil)
+	request, err := k.requestGenerator(http.MethodGet, uri.String(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("API request could not be created: %w", err)
 	}

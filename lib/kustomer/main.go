@@ -22,6 +22,7 @@ var (
 	debug             bool
 	autoRefresh       = false
 	initializedLogger kustomer.Logger
+	productUserAgent  *string
 	instance          *kustomer.Kustomer
 
 	initializedContext       context.Context
@@ -75,6 +76,17 @@ func SetLogger(logger kustomer.Logger, debugFlag *bool) error {
 	return nil
 }
 
+func SetProductUserAgent(ua *string) error {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	if instance != nil {
+		return kustomer.ErrStatusAlreadyInitialized
+	}
+	productUserAgent = ua
+	return nil
+}
+
 // Initialize initializes the global library state with the provided product name.
 func Initialize(ctx context.Context, productName *string) error {
 	mutex.Lock()
@@ -89,9 +101,12 @@ func Initialize(ctx context.Context, productName *string) error {
 	}
 
 	k, err := kustomer.New(&kustomer.Config{
-		Logger:      initializedLogger,
+		Logger: initializedLogger,
+
 		Debug:       debug,
 		AutoRefresh: autoRefresh,
+
+		ProductUserAgent: productUserAgent,
 	})
 	if err != nil {
 		if debug {
@@ -205,6 +220,53 @@ func CurrentKopanoProductClaims() (*kustomer.KopanoProductClaims, error) {
 	}
 
 	return k.CurrentKopanoProductClaims(ctx), nil
+}
+
+func InstantEnsure(ctx context.Context, productName *string, productUserAgent *string, timeout time.Duration) (*kustomer.KopanoProductClaims, error) {
+	mutex.RLock()
+	logger := initializedLogger
+	mutex.RUnlock()
+
+	k, err := kustomer.New(&kustomer.Config{
+		Logger: logger,
+
+		Debug:       debug,
+		AutoRefresh: false,
+
+		ProductUserAgent: productUserAgent,
+	})
+	if err != nil {
+		if debug {
+			initializedLogger.Printf("kustomer-c begin instant ensure failed: %v\n", err)
+		}
+		return nil, err
+	}
+
+	if debug {
+		initializedLogger.Printf("kustomer-c begin instant ensure (debug: %v)\n", debug)
+	}
+
+	err = k.Initialize(ctx, productName)
+	if err != nil {
+		if debug {
+			initializedLogger.Printf("kustomer-c begin instant ensure initialize failed: %v\n", err)
+		}
+		return nil, err
+	}
+	defer k.Uninitialize() //nolint
+
+	timeoutCtx, timeoutCtxCancel := context.WithTimeout(ctx, timeout)
+	err = k.WaitUntilReady(timeoutCtx)
+	timeoutCtxCancel()
+	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			err = kustomer.ErrStatusTimeout
+		}
+		return nil, err
+	}
+
+	kpc := k.CurrentKopanoProductClaims(ctx)
+	return kpc, nil
 }
 
 func ErrNumericText(err kustomer.ErrNumeric) string {

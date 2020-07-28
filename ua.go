@@ -16,12 +16,19 @@ import (
 // requests created by this library.
 var DefaultUserAgent = "libkustomer/" + version.Version
 
-func newRequestWithUserAgent(method, uri string, body io.Reader) (*http.Request, error) {
-	request, err := http.NewRequest(method, uri, body)
-	if err != nil {
-		return nil, err
-	}
+func newRequestGenerator(ua *string) func(string, string, io.Reader) (*http.Request, error) {
+	return func(method, uri string, body io.Reader) (*http.Request, error) {
+		request, err := http.NewRequest(method, uri, body)
+		if err != nil {
+			return nil, err
+		}
 
-	request.Header.Set("User-Agent", DefaultUserAgent)
-	return request, nil
+		userAgent := DefaultUserAgent
+		if ua != nil {
+			userAgent = *ua + " " + userAgent
+		}
+
+		request.Header.Set("User-Agent", userAgent)
+		return request, nil
+	}
 }
