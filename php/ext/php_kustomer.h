@@ -25,6 +25,7 @@ PHP_FUNCTION(kustomer_ensure_ensure_int64_op);
 PHP_FUNCTION(kustomer_ensure_get_float64);
 PHP_FUNCTION(kustomer_ensure_ensure_float64);
 PHP_FUNCTION(kustomer_ensure_ensure_float64_op);
+PHP_FUNCTION(kustomer_ensure_ensure_stringArray_value);
 
 // Objects.
 zend_class_entry *phpkustomer_NumericException_ce;

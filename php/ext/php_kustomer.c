@@ -96,6 +96,13 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_kustomer_ensure_ensure_float64_op, 0, 0, 5)
 	ZEND_ARG_TYPE_INFO(0, opCode, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_kustomer_ensure_ensure_stringArray_value, 0, 0, 4)
+	ZEND_ARG_TYPE_INFO(0, transaction, IS_OBJECT, 0)
+	ZEND_ARG_TYPE_INFO(0, productName, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, claim, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, value, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
 /* }}} */
 
 // Externals from libkustomer.
@@ -118,6 +125,7 @@ typedef long long unsigned int (*kustomer_ensure_ensure_int64_op_dynamic_t)(void
 typedef struct kustomer_ensure_get_float64_return (*kustomer_ensure_get_float64_dynamic_t)(void *transactionPtr, char *productName, char *claim);
 typedef long long unsigned int (*kustomer_ensure_ensure_float64_dynamic_t)(void *transactionPtr, char *productName, char *claim, double value);
 typedef long long unsigned int (*kustomer_ensure_ensure_float64_op_dynamic_t)(void *transactionPtr, char *productName, char *claim, double value, int opCode);
+typedef long long unsigned int (*kustomer_ensure_ensure_stringArray_value_dynamic_t)(void *transactionPtr, char *productName, char *claim, char *value);
 kustomer_err_numeric_text_dynamic_t kustomer_err_numeric_text_dynamic = NULL;
 kustomer_initialize_dynamic_t kustomer_initialize_dynamic = NULL;
 kustomer_uninitialize_dynamic_t kustomer_uninitialize_dynamic = NULL;
@@ -137,6 +145,7 @@ kustomer_ensure_ensure_int64_op_dynamic_t kustomer_ensure_ensure_int64_op_dynami
 kustomer_ensure_get_float64_dynamic_t kustomer_ensure_get_float64_dynamic = NULL;
 kustomer_ensure_ensure_float64_dynamic_t kustomer_ensure_ensure_float64_dynamic = NULL;
 kustomer_ensure_ensure_float64_op_dynamic_t kustomer_ensure_ensure_float64_op_dynamic = NULL;
+kustomer_ensure_ensure_stringArray_value_dynamic_t kustomer_ensure_ensure_stringArray_value_dynamic = NULL;
 
 // Global signleton to remember dlopen.
 int kustomer_so_loaded = 0;
@@ -183,6 +192,7 @@ int load_so()
 	kustomer_ensure_get_float64_dynamic = (kustomer_ensure_get_float64_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_ensure_get_float64");
 	kustomer_ensure_ensure_float64_dynamic = (kustomer_ensure_ensure_float64_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_ensure_ensure_float64");
 	kustomer_ensure_ensure_float64_op_dynamic = (kustomer_ensure_ensure_float64_op_dynamic_t)dlsym(libkustomer_library_handle, "ustomer_ensure_ensure_float64_op");
+	kustomer_ensure_ensure_stringArray_value_dynamic = (kustomer_ensure_ensure_stringArray_value_dynamic_t)dlsym(libkustomer_library_handle, "kustomer_ensure_ensure_stringArray_value");
 
 	kustomer_so_loaded = 1;
 	return KUSTOMER_ERRSTATUSSUCCESS;
@@ -801,6 +811,42 @@ PHP_FUNCTION(kustomer_ensure_ensure_float64_op)
 	}
 }
 
+PHP_FUNCTION(kustomer_ensure_ensure_stringArray_value)
+{
+	zval *kpc_zv;
+	zend_string *productName;
+	zend_string *claim;
+	zend_string *value;
+
+	ZEND_PARSE_PARAMETERS_START(4, 4)
+		Z_PARAM_OBJECT_OF_CLASS(kpc_zv, phpkustomer_KopanoProductClaims_ce)
+		Z_PARAM_STR(productName)
+		Z_PARAM_STR(claim)
+		Z_PARAM_STR(value)
+	ZEND_PARSE_PARAMETERS_END();
+
+	int res;
+
+	if ((res = load_so()) != KUSTOMER_ERRSTATUSSUCCESS) {
+		PHPKUSTOMER_THROW(res);
+		return;
+	}
+
+	phpkustomer_KopanoProductClaims_t *kpc;
+	kpc = Z_PHPKUSTOMER_KOPANOPRODUCTCLAIMS_P(kpc_zv);
+
+	res = kustomer_ensure_ensure_stringArray_value_dynamic(kpc->kpc_ptr, ZSTR_VAL(productName), ZSTR_VAL(claim), ZSTR_VAL(value));
+
+	zend_string_release(productName);
+	zend_string_release(claim);
+	zend_string_release(value);
+
+	if (res != KUSTOMER_ERRSTATUSSUCCESS) {
+		PHPKUSTOMER_THROW(res);
+		return;
+	}
+}
+
 /* {{{ PHP_MINIT_FUNCTION */
 PHP_MINIT_FUNCTION(kustomer_php)
 {
@@ -866,6 +912,7 @@ zend_function_entry kustomer_php_functions[] = {
 	PHP_FE(kustomer_ensure_get_float64, arginfo_kustomer_ensure_get)
 	PHP_FE(kustomer_ensure_ensure_float64, arginfo_kustomer_ensure_ensure_float64)
 	PHP_FE(kustomer_ensure_ensure_float64_op, arginfo_kustomer_ensure_ensure_float64_op)
+	PHP_FE(kustomer_ensure_ensure_stringArray_value, arginfo_kustomer_ensure_ensure_stringArray_value)
 	PHP_FE_END
 };
 /* }}} */
