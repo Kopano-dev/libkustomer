@@ -8,6 +8,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -18,70 +19,116 @@ import (
 	kustomer "stash.kopano.io/kc/libkustomer"
 )
 
-func main() {
-	logger := log.New(os.Stderr, "Log: ", 0)
+var (
+	debug          bool
+	dumpClaimsOnly bool
+	dumpKpcOnly    bool
+	watch          bool
+
+	logger   *log.Logger
+	instance *kustomer.Kustomer
+)
+
+func initialize(ctx context.Context) {
+	logger = log.New(os.Stderr, "> ", 0)
 
 	k, err := kustomer.New(&kustomer.Config{
 		Logger:      logger,
-		Debug:       true,
+		Debug:       false,
 		AutoRefresh: true,
 	})
 	if err != nil {
 		panic(err)
 	}
 
-	ctx := context.Background()
-
-	fmt.Println("Initializing ...")
+	logger.Println("initializing ...")
 	err = k.Initialize(ctx, nil)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Printf("Initialized, library version: %s\n", k.Version())
+	logger.Printf("library version: %s (%s) initialized\n", k.Version(), k.BuildDate())
+	instance = k
+}
 
-	fmt.Println("Waiting until ready ...")
-	updateCh := make(chan bool)
-	errCh := make(chan error)
-	go func() {
-		notifyErr := k.NotifyWhenUpdated(ctx, updateCh)
-		errCh <- notifyErr
-	}()
+func uninitialize() {
+	instance.Uninitialize()
+	instance = nil
+}
 
-	select {
-	case <-updateCh:
-	case err = <-errCh:
-		panic(err)
-	case <-time.After(30 * time.Second):
-		panic("timeout waiting for first update")
-	}
-	fmt.Println("Ready with aggregated claims:")
-	if err := dumpAsJSON(k.CurrentKopanoProductClaims(ctx).Dump()); err != nil {
-		panic(err)
-	}
-
-	go func() {
-		for v := range updateCh {
-			fmt.Println("Claims have been updated:", v)
-			if err := dumpAsJSON(k.CurrentKopanoProductClaims(ctx).Dump()); err != nil {
-				panic(err)
-			}
+func dump(ctx context.Context) {
+	if !dumpClaimsOnly {
+		logger.Println("aggregated product claims ready")
+		if err := dumpAsJSON(instance.CurrentKopanoProductClaims(ctx).Dump()); err != nil {
+			panic(err)
 		}
-	}()
+	}
+	if !dumpKpcOnly {
+		logger.Println("active claims loaded")
+		if err := dumpAsJSON(instance.CurrentClaims(ctx).Dump()); err != nil {
+			panic(err)
+		}
+	}
+}
 
-	fmt.Println("Claims active on load:")
-	if err := dumpAsJSON(k.CurrentClaims(ctx).Dump()); err != nil {
-		panic(err)
+func main() {
+	flag.BoolVar(&debug, "debug", false, "Enable debug output")
+	flag.BoolVar(&dumpClaimsOnly, "claims-only", false, "Only dump raw active claim set JSON")
+	flag.BoolVar(&dumpKpcOnly, "kpc-only", false, "Only dump raw active Kopano product claim set JSON")
+	flag.BoolVar(&watch, "watch", false, "Keep running and watch for changes")
+	flag.Parse()
+
+	var err error
+	ctx := context.Background()
+
+	initialize(ctx)
+	defer uninitialize()
+
+	timeoutCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	logger.Println("waiting until ready ...")
+	if watch {
+
+		updateCh := make(chan bool)
+		errCh := make(chan error)
+		go func() {
+			notifyErr := instance.NotifyWhenUpdated(ctx, updateCh)
+			errCh <- notifyErr
+		}()
+
+		select {
+		case <-updateCh:
+		case err = <-errCh:
+			panic(err)
+		case <-timeoutCtx.Done():
+			panic("timeout waiting for first update")
+		}
+		dump(ctx)
+		go func() {
+			for v := range updateCh {
+				logger.Println("claims have been updated:", v)
+				dump(ctx)
+			}
+		}()
+	} else {
+		err = instance.WaitUntilReady(timeoutCtx)
+		if err != nil {
+			panic(err)
+		}
+		dump(ctx)
 	}
 
-	fmt.Println("\nPress CTRL+C to exit.")
-	signalCh := make(chan os.Signal, 1)
-	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)
-	<-signalCh
+	if watch {
+		logger.Println("watching for changes, Press CTRL+C to or send INT or TERM signal to exit ...")
+		signalCh := make(chan os.Signal, 1)
+		signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)
+		<-signalCh
+	}
 }
 
 func dumpAsJSON(v interface{}) error {
-	b, err := json.MarshalIndent(v, "", "\t")
+	b, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
 		return err
 	}
