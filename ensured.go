@@ -61,7 +61,7 @@ func (kpc *KopanoProductClaims) EnsureOnline() (err error) {
 }
 
 func (kpc *KopanoProductClaims) EnsureTrusted() (err error) {
-	if kpc.response.Trusted {
+	if !kpc.response.Trusted {
 		return ErrEnsureTrustedFailed
 	}
 	return
