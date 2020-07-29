@@ -172,5 +172,5 @@ gopkg.in/yaml.v2 v2.2.2 h1:ZCJp+EgiOT7lHqUV2J862kp8Qj64Jo6az82+3Td9dZw=
 gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 honnef.co/go/tools v0.0.0-20190102054323-c2f93a96b099/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
 stash.kopano.io/kgol/ksurveyclient-go v0.6.0/go.mod h1:LJMDQBROS2oXxBN04eSI6j1KhgWlqMFd8xKjXV4Irtw=
-stash.kopano.io/kgol/kustomer v0.2.0 h1:oxb6W7gWA7SjuhPrEBim3BBDq7OhBMttizpffSzlgOI=
-stash.kopano.io/kgol/kustomer v0.2.0/go.mod h1:LcvzSbhmIT7qWsZFdiPPnfR93AIMMxNQbShZmZNOieI=
+stash.kopano.io/kgol/kustomer v0.4.0 h1:t8QAWqtRJsQwFmE7TH0syEU7/Yg5rZfarjs4/V4+qSw=
+stash.kopano.io/kgol/kustomer v0.4.0/go.mod h1:LcvzSbhmIT7qWsZFdiPPnfR93AIMMxNQbShZmZNOieI=
