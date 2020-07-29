@@ -5,6 +5,7 @@
 
 package kustomer
 
+// A Config holds the configuration for this module.
 type Config struct {
 	Logger Logger
 

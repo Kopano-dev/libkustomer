@@ -5,6 +5,8 @@
 
 package kustomer
 
+// A Logger defines a simple logging interface for pluggable loggers used by
+// this module.
 type Logger interface {
 	Printf(string, ...interface{})
 }

@@ -52,6 +52,7 @@ type Kustomer struct {
 	currentClaims *api.ClaimsResponse
 }
 
+// New creates a new Kustomer instance using the provided configuration.
 func New(config *Config) (*Kustomer, error) {
 	if config == nil {
 		config = &Config{
@@ -90,14 +91,20 @@ func New(config *Config) (*Kustomer, error) {
 	return k, nil
 }
 
+// Version returns the runtime version string of this module.
 func (k *Kustomer) Version() string {
 	return version.Version
 }
 
+// BuildDate returns the build data string of this module.
 func (k *Kustomer) BuildDate() string {
 	return version.BuildDate
 }
 
+// Initialize intializes the associated instance with a context and a product
+// name. Initialize must be called first, before most of the other functions
+// of the instance return ErrStatusNotInitialized if this function was not
+// called first.
 func (k *Kustomer) Initialize(ctx context.Context, productName *string) error {
 	if productName != nil && *productName == "" {
 		return ErrStatusInvalidProductName
@@ -293,6 +300,9 @@ func (k *Kustomer) Initialize(ctx context.Context, productName *string) error {
 	return nil
 }
 
+// Uninitialize is the opposite of initialize and releases the associated
+// resources. Returns ErrStatusNotInitialized when this function is called
+// without a call to Initialize before.
 func (k *Kustomer) Uninitialize() error {
 	k.mutex.Lock()
 	defer k.mutex.Unlock()
@@ -306,6 +316,9 @@ func (k *Kustomer) Uninitialize() error {
 	return nil
 }
 
+// WaitUntilReady waits until initialization is complete, until the provided
+// context is done or until the associated instance gets unintialized. An error
+// is also returned if Initialize was not called before.
 func (k *Kustomer) WaitUntilReady(ctx context.Context) error {
 	k.mutex.RLock()
 	if !k.initialized {
@@ -328,6 +341,11 @@ func (k *Kustomer) WaitUntilReady(ctx context.Context) error {
 	return err
 }
 
+// NotifyWhenUpdated registers the provided even channel to receive bool values
+// whenever the associated isntance claims have been updated. Calling this
+// function blocks until the provided context is Done or until the associated
+// instance is unintialized. An error is also returned if Initialize was not
+// called before.
 func (k *Kustomer) NotifyWhenUpdated(ctx context.Context, eventCh chan<- bool) error {
 	err := func() error {
 		for {
@@ -422,6 +440,10 @@ func (k *Kustomer) fetchClaims(ctx context.Context) (*api.ClaimsResponse, error)
 	return cr, nil
 }
 
+// CurrentKopanoProductClaims returns the active Kopano product claims of the
+// associated instance. This function blocks until a value is available or
+// until the provided context is done. In the current implementation, a value
+// will always be returned directly.
 func (k *Kustomer) CurrentKopanoProductClaims(ctx context.Context) *KopanoProductClaims {
 	k.mutex.RLock()
 	kpc := k.currentKopanoProductClaims
@@ -431,6 +453,11 @@ func (k *Kustomer) CurrentKopanoProductClaims(ctx context.Context) *KopanoProduc
 	}
 }
 
+// CurrentClaims returns the active claim set of the associated instance. This
+// function blocks until a value is available or until the provided context
+// is done. The fetched claims are cached, so no subsequent requests will
+// result when calling this function, unless the underlaying active claims have
+// changed since the last call.
 func (k *Kustomer) CurrentClaims(ctx context.Context) *Claims {
 	k.mutex.RLock()
 	claims := k.currentClaims

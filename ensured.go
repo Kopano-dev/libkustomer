@@ -20,16 +20,20 @@ const (
 	OperatorLesserThanOrEqual  OperatorType = "le"
 )
 
+// Claims represent a set of active claim key value pairs.
 type Claims struct {
 	response *api.ClaimsResponse
 }
 
+// Dump exports the associated Claims payload data.
 func (c *Claims) Dump() map[string]interface{} {
 	return map[string]interface{}{
 		"payload": c.response,
 	}
 }
 
+// KopanoProductClaims represent a set of all active claims as aggregated
+// values.
 type KopanoProductClaims struct {
 	response *api.ClaimsKopanoProductsResponse
 
@@ -37,6 +41,7 @@ type KopanoProductClaims struct {
 	allowUntrusted bool
 }
 
+// Dump exports the associated KopanoProductClaims data.
 func (kpc *KopanoProductClaims) Dump() map[string]interface{} {
 	return map[string]interface{}{
 		"mustBeOnline":   kpc.mustBeOnline,
@@ -45,14 +50,23 @@ func (kpc *KopanoProductClaims) Dump() map[string]interface{} {
 	}
 }
 
+// SetMustBeOnline sets the mustBeOnline flag value of the associated claims
+// to the provided flag value. If true, any ensure check of the associated
+// claims will fail if the claims data was produced without online verification.
 func (kpc *KopanoProductClaims) SetMustBeOnline(flag bool) {
 	kpc.mustBeOnline = flag
 }
 
+// SetAllowUntrusted sets the allowUntrusted flag value of the associated claims
+// to the provided flag value. If true, any ensure check of the associated
+// claims will ignore the trusted state of the claims data.
 func (kpc *KopanoProductClaims) SetAllowUntrusted(flag bool) {
 	kpc.allowUntrusted = flag
 }
 
+// EnsureOnline returns ErrEnsureOnlineFailed error if the associated claims
+// data was validated with offline. This function returns the error even if
+// the associated claims mustBeOnline flag was is false.
 func (kpc *KopanoProductClaims) EnsureOnline() (err error) {
 	if kpc.response.Offline {
 		return ErrEnsureOnlineFailed
@@ -60,6 +74,9 @@ func (kpc *KopanoProductClaims) EnsureOnline() (err error) {
 	return
 }
 
+// EnsureTrusted returns ErrEnsureTrustedFailed error if the associated claims
+// data is not trusted. This function will return the error even if the
+// associated claims SetAllowUntrusted was set to true.
 func (kpc *KopanoProductClaims) EnsureTrusted() (err error) {
 	if !kpc.response.Trusted {
 		return ErrEnsureTrustedFailed
@@ -67,6 +84,8 @@ func (kpc *KopanoProductClaims) EnsureTrusted() (err error) {
 	return
 }
 
+// EnsureOnlineAndTrusted is the combination of EnsureOnline and EnsureOnline
+// for convinience. Samle rules apply as described in those two functions.
 func (kpc *KopanoProductClaims) EnsureOnlineAndTrusted() (err error) {
 	if err := kpc.EnsureOnline(); err != nil {
 		return err
@@ -109,6 +128,9 @@ func (kpc *KopanoProductClaims) ensureValue(product, claim string) (interface{},
 	return v, nil
 }
 
+// EnsureOK returns an error if the provided product is not found in the
+// associated claims data or if that product is found but the OK flag of the
+// active product is false.
 func (kpc *KopanoProductClaims) EnsureOK(product string) (err error) {
 	p, err := kpc.getProduct(product)
 	if err != nil {
@@ -120,6 +142,9 @@ func (kpc *KopanoProductClaims) EnsureOK(product string) (err error) {
 	return nil
 }
 
+// GetBool returns the prodvided prodcut claim bool value. If the product or
+// the claim is not found, an the returned error describes the reason why the
+// claim value is not available.
 func (kpc *KopanoProductClaims) GetBool(product, claim string) (bool, error) {
 	v, err := kpc.ensureValue(product, claim)
 	if err != nil {
@@ -133,6 +158,9 @@ func (kpc *KopanoProductClaims) GetBool(product, claim string) (bool, error) {
 	return tv, nil
 }
 
+// EnsureBool returns an error if the provided product or the claim value is not
+// found. Furthermore the claim value is compared to the provided value and if
+// it is not a match, an error is returned as well.
 func (kpc *KopanoProductClaims) EnsureBool(product, claim string, value bool) error {
 	tv, err := kpc.GetBool(product, claim)
 	if err != nil {
@@ -145,6 +173,9 @@ func (kpc *KopanoProductClaims) EnsureBool(product, claim string, value bool) er
 	return nil
 }
 
+// GetString returns the prodvided product claim string value. If the product
+// or the claim is not found, an the returned error describes the reason why the
+// claim value is not available.
 func (kpc *KopanoProductClaims) GetString(product, claim string) (string, error) {
 	v, err := kpc.ensureValue(product, claim)
 	if err != nil {
@@ -158,6 +189,9 @@ func (kpc *KopanoProductClaims) GetString(product, claim string) (string, error)
 	return tv, nil
 }
 
+// EnsureString returns an error if the provided product or the claim value is
+// not found. Furthermore the claim value is compared to the provided value and
+// if it is not a match, an error is returned as well.
 func (kpc *KopanoProductClaims) EnsureString(product, claim, value string) error {
 	tv, err := kpc.GetString(product, claim)
 	if err != nil {
@@ -170,6 +204,9 @@ func (kpc *KopanoProductClaims) EnsureString(product, claim, value string) error
 	return nil
 }
 
+// GetInt64 returns the prodvided product claim numeric value. If the product
+// or the claim is not found, an the returned error describes the reason why the
+// claim value is not available.
 func (kpc *KopanoProductClaims) GetInt64(product, claim string) (int64, error) {
 	v, err := kpc.ensureValue(product, claim)
 	if err != nil {
@@ -183,6 +220,9 @@ func (kpc *KopanoProductClaims) GetInt64(product, claim string) (int64, error) {
 	return int64(tv), nil
 }
 
+// EnsureInt64 returns an error if the provided product or the claim value is
+// not found. Furthermore the claim value is compared to the provided value and
+// if it is not a match, an error is returned as well.
 func (kpc *KopanoProductClaims) EnsureInt64(product, claim string, value int64) error {
 	tv, err := kpc.GetInt64(product, claim)
 	if err != nil {
@@ -195,6 +235,10 @@ func (kpc *KopanoProductClaims) EnsureInt64(product, claim string, value int64) 
 	return nil
 }
 
+// EnsureInt64WithOperator returns an error if the provided product or the claim
+// value is not found. Furthermore the claim value is compared to the provided
+// value using the provided comparison operator and if it is not a match, an
+// error is returned as well.
 func (kpc *KopanoProductClaims) EnsureInt64WithOperator(product, claim string, value int64, op OperatorType) error {
 	tv, err := kpc.GetInt64(product, claim)
 	if err != nil {
@@ -224,6 +268,9 @@ func (kpc *KopanoProductClaims) EnsureInt64WithOperator(product, claim string, v
 	return ErrEnsureProductClaimValueMismatch
 }
 
+// GetFloat64 returns the prodvided product claim float value. If the product
+// or the claim is not found, an the returned error describes the reason why the
+// claim value is not available.
 func (kpc *KopanoProductClaims) GetFloat64(product, claim string) (float64, error) {
 	v, err := kpc.ensureValue(product, claim)
 	if err != nil {
@@ -237,6 +284,9 @@ func (kpc *KopanoProductClaims) GetFloat64(product, claim string) (float64, erro
 	return tv, nil
 }
 
+// EnsureFloat64 returns an error if the provided product or the claim value is
+// not found. Furthermore the claim value is compared to the provided value and
+// if it is not a match, an error is returned as well.
 func (kpc *KopanoProductClaims) EnsureFloat64(product, claim string, value float64) error {
 	tv, err := kpc.GetFloat64(product, claim)
 	if err != nil {
@@ -249,6 +299,10 @@ func (kpc *KopanoProductClaims) EnsureFloat64(product, claim string, value float
 	return nil
 }
 
+// EnsureFloat64WithOperator returns an error if the provided product or the
+// claim value is not found. Furthermore the claim value is compared to the
+// provided value using the provided comparison operator and if it is not a
+// match, an error is returned as well.
 func (kpc *KopanoProductClaims) EnsureFloat64WithOperator(product, claim string, value float64, op OperatorType) error {
 	tv, err := kpc.GetFloat64(product, claim)
 	if err != nil {
@@ -278,6 +332,9 @@ func (kpc *KopanoProductClaims) EnsureFloat64WithOperator(product, claim string,
 	return ErrEnsureProductClaimValueMismatch
 }
 
+// GetStringArrayValues returns the prodvided product claim string array value.
+// If the product  or the claim is not found, an the returned error describes
+// the reason why the claim value is not available.
 func (kpc *KopanoProductClaims) GetStringArrayValues(product, claim string) ([]string, error) {
 	v, err := kpc.ensureValue(product, claim)
 	if err != nil {
@@ -291,6 +348,9 @@ func (kpc *KopanoProductClaims) GetStringArrayValues(product, claim string) ([]s
 	return tv, nil
 }
 
+// EnsureStringArrayValues returns an error if the provided product or the claim
+// value is not found. Furthermore if not all of the provided value prameters
+// are present in the claim value n error is returned as well.
 func (kpc *KopanoProductClaims) EnsureStringArrayValues(product, claim string, value ...string) error {
 	tv, err := kpc.GetStringArrayValues(product, claim)
 	if err != nil {

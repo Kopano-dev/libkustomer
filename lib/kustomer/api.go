@@ -3,7 +3,7 @@
  * Copyright 2020 Kopano and its licensors
  */
 
-package main
+package main //nolint
 
 /*
 #define KUSTOMER_API 1
@@ -128,7 +128,7 @@ func kustomer_wait_until_ready(timeout C.ulonglong) C.ulonglong {
 }
 
 //export kustomer_set_notify_when_updated
-func kustomer_set_notify_when_updated(updateCb C.kustomer_cb_func_watch, exitCb C.kustomer_cb_func_watch) C.ulonglong {
+func kustomer_set_notify_when_updated(updateCb, exitCb C.kustomer_cb_func_watch) C.ulonglong {
 	err := SetNotifyWhenUpdated(func() {
 		if updateCb != nil {
 			C.bridge_kustomer_watch_cb_func_updated(updateCb)
@@ -475,7 +475,7 @@ func kustomer_ensure_ensure_float64_op(transactionPtr unsafe.Pointer, productNam
 }
 
 //export kustomer_ensure_get_stringArray_json
-func kustomer_ensure_get_stringArray_json(transactionPtr unsafe.Pointer, productNameCString, claimCString *C.char) (C.ulonglong, unsafe.Pointer) {
+func kustomer_ensure_get_stringArray_json(transactionPtr unsafe.Pointer, productNameCString, claimCString *C.char) (statusNum C.ulonglong, jsonBytes unsafe.Pointer) {
 	kpc := restoreKopanoProductClaimsFromPointer(transactionPtr)
 	if kpc == nil {
 		return asKnownErrorOrUnknown(kustomer.ErrEnsureInvalidTransaction), nil

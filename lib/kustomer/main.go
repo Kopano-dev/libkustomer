@@ -16,6 +16,8 @@ import (
 	"stash.kopano.io/kc/libkustomer/version"
 )
 
+// This module uses a global state, to track initialization per process. The
+// following mutex and values reflect this behavior.
 var (
 	mutex sync.RWMutex
 
@@ -38,10 +40,12 @@ func init() { //nolint:gochecknoinits // This library uses init to set up env.
 	}
 }
 
+// Version returns the runtime version string of this module.
 func Version() string {
 	return version.Version
 }
 
+// BuildDate returns the build data string of this module.
 func BuildDate() string {
 	return version.BuildDate
 }
@@ -76,6 +80,10 @@ func SetLogger(logger kustomer.Logger, debugFlag *bool) error {
 	return nil
 }
 
+// SetProductUserAgent sets an additional user agent string which is used when
+// creating HTTP requests (User-Agent request header.) Use this value to
+// make it possible to identify the software doing license checks. Set as nil
+// to reset any previously set value.
 func SetProductUserAgent(ua *string) error {
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -87,7 +95,9 @@ func SetProductUserAgent(ua *string) error {
 	return nil
 }
 
-// Initialize initializes the global library state with the provided product name.
+// Initialize initializes the global library state with the provided product
+// name. Use nil productName to initialize for all products. The initialization
+// is bound to the provided context and resources are relased when it is done.
 func Initialize(ctx context.Context, productName *string) error {
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -138,7 +148,8 @@ func Initialize(ctx context.Context, productName *string) error {
 	return nil
 }
 
-// Uninitialize uninitializes the global library state.
+// Uninitialize uninitializes the global library state. Make sure to call this
+// when cleaning up and having call Initialize before.
 func Uninitialize() error {
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -167,7 +178,8 @@ func Uninitialize() error {
 	return nil
 }
 
-// WaitUntilReady blocks until the initialization is ready or timeout.
+// WaitUntilReady blocks until the initialization is ready or until the provided
+// timeout. It also stops when the global library state is uninitialized.
 func WaitUntilReady(timeout time.Duration) error {
 	mutex.RLock()
 	k := instance
@@ -196,6 +208,8 @@ func WaitUntilReady(timeout time.Duration) error {
 	return err
 }
 
+// CurrentClaims return the current active claim set using the global library
+// state instance.
 func CurrentClaims() (*kustomer.Claims, error) {
 	mutex.RLock()
 	k := instance
@@ -209,6 +223,8 @@ func CurrentClaims() (*kustomer.Claims, error) {
 	return k.CurrentClaims(ctx), nil
 }
 
+// CurrentKopanoProductClaims returns the current active Kopanp product claims
+// using the global library state instance.
 func CurrentKopanoProductClaims() (*kustomer.KopanoProductClaims, error) {
 	mutex.RLock()
 	k := instance
@@ -222,7 +238,14 @@ func CurrentKopanoProductClaims() (*kustomer.KopanoProductClaims, error) {
 	return k.CurrentKopanoProductClaims(ctx), nil
 }
 
-func InstantEnsure(ctx context.Context, productName *string, productUserAgent *string, timeout time.Duration) (*kustomer.KopanoProductClaims, error) {
+// InstanceEnsure is a way to start an ensure transaction without having to
+// initialize the global library strate. The transaction is bound to the
+// provided context and is using the provide product name and user agent
+// accordingly. This function blocks until the transaction data is available or
+// until the provided context is done or the provided timeout was reached. On
+// success, the Kopano product claims transaction is returned.
+func InstantEnsure(ctx context.Context,
+	productName, productUserAgent *string, timeout time.Duration) (*kustomer.KopanoProductClaims, error) {
 	mutex.RLock()
 	logger := initializedLogger
 	mutex.RUnlock()
@@ -269,11 +292,18 @@ func InstantEnsure(ctx context.Context, productName *string, productUserAgent *s
 	return kpc, nil
 }
 
+// ErrNumericText is a helper function to retrieve a string message associated
+// with the provided numeric error.
 func ErrNumericText(err kustomer.ErrNumeric) string {
 	return kustomer.ErrNumericText(err)
 }
 
-func SetNotifyWhenUpdated(updateCb func(), exitCb func()) error {
+// SetNotifyWhenUpdated sets the callback function to watch for claim updates
+// on the global library state instance. The global library state must have
+// been initialized to use this function. The lifetime of all resources
+// created by this function is bound to the global library initialization and
+// can be unset by using the UnsetNotifyWhenUpdated function.
+func SetNotifyWhenUpdated(updateCb, exitCb func()) error {
 	mutex.Lock()
 	if initializedNotifyCancel != nil {
 		mutex.Unlock()
@@ -321,6 +351,8 @@ func SetNotifyWhenUpdated(updateCb func(), exitCb func()) error {
 	return nil
 }
 
+// UnsetNotifyWhenUpdated removes the set notify callback if there is any, and
+// releases its resources.
 func UnsetNotifyWhenUpdated() error {
 	mutex.Lock()
 	if initializedNotifyCancel == nil {
