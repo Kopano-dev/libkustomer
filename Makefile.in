@@ -66,6 +66,9 @@ GCFLAGS  ?=
 .PHONY: default
 default: lib
 
+.PHONY: utils
+utils: cmd/kustomer-dump
+
 .PHONY: all
 all: lib python php
 
@@ -209,7 +212,7 @@ licenses: ; $(info building licenses files ...)
 3rdparty-LICENSES.md: licenses
 
 .PHONY: dist
-dist: licenses ; $(info building dist tarball ...)
+dist: utils licenses ; $(info building dist tarball ...)
 	@mkdir -p "dist/${PACKAGE_NAME}-${VERSION}"
 	@cd dist && \
 	cp -avf ../LICENSE.txt "${PACKAGE_NAME}-${VERSION}" && \
@@ -217,6 +220,7 @@ dist: licenses ; $(info building dist tarball ...)
 	cp -avf ../README.md "${PACKAGE_NAME}-${VERSION}" && \
 	cp -avf ../libkustomer.pc "${PACKAGE_NAME}-${VERSION}" && \
 	cp -avf ../.libs/* "${PACKAGE_NAME}-${VERSION}" && \
+	cp -avf ../bin/kustomer-dump "${PACKAGE_NAME}-${VERSION}" && \
 	chmod 755 "${PACKAGE_NAME}-${VERSION}"/*.so* && \
 	rm -f "${PACKAGE_NAME}-${VERSION}"/$(SHAREDLIB) && \
 	ln -s $(SHAREDLIBV) "${PACKAGE_NAME}-${VERSION}"/$(SHAREDLIB) && \
