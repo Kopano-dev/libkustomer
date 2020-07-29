@@ -1,5 +1,7 @@
 # Kopano Kustomer Daemon client library
 
+[![GoDoc](https://godoc.org/stash.kopano.io/kc/libkustomer?status.svg)](https://godoc.org/stash.kopano.io/kc/libkustomer)
+
 This project implements a C shared library with a public API to talk to the API
 provided by a locally running Kopano Kustomer Daemon.
 
