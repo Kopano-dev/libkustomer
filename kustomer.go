@@ -156,6 +156,11 @@ func (k *Kustomer) Initialize(ctx context.Context, productName *string) error {
 			Host:   "localhost",
 			Path:   "/api/v1/claims/watch",
 		}
+		if productName != nil {
+			query := &url.Values{}
+			query.Set("product", *productName)
+			uri.RawQuery = query.Encode()
+		}
 
 		first := true
 		for {
