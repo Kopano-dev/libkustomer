@@ -9,7 +9,7 @@ import (
 	"io"
 	"net/http"
 
-	"stash.kopano.io/kc/libkustomer/version"
+	"stash.kopano.io/kc/libkustomer/internal/version"
 )
 
 // DefaultUserAgent is the HTTP user agent set in to request headers for HTTP

@@ -92,7 +92,7 @@ $(CMDS): vendor generate ; $(info building $@ ...) @
 		-mod=vendor \
 		-tags release \
 		-trimpath \
-		-ldflags '-s -w -buildid=reproducible/$(VERSION) -X $(PACKAGE)/version.Version=$(VERSION) -X $(PACKAGE)/version.BuildDate=$(DATE) -extldflags -static' \
+		-ldflags '-s -w -buildid=reproducible/$(VERSION) -X $(PACKAGE)/internal/version.Version=$(VERSION) -X $(PACKAGE)/internal/version.BuildDate=$(DATE) -extldflags -static' \
 		-o bin/$(notdir $@) ./$@
 
 .PHONY: $(LIBS)
@@ -104,7 +104,7 @@ $(LIBS): vendor generate | $(DST_BIN) $(DST_LIBS) $(DST_HDRS); $(info building C
 		-buildmode=c-shared \
 		-asmflags '$(ASMFLAGS)' \
 		-gcflags '$(GCFLAGS)' \
-		-ldflags '$(LDFLAGS) -buildid=reproducible/$(VERSION) -X $(PACKAGE)/version.Version=$(VERSION) -X $(PACKAGE)/version.BuildDate=$(DATE) -linkmode external -extldflags=-Wl,-soname,lib$(notdir $@).so.0' \
+		-ldflags '$(LDFLAGS) -buildid=reproducible/$(VERSION) -X $(PACKAGE)/internal/version.Version=$(VERSION) -X $(PACKAGE)/internal/version.BuildDate=$(DATE) -linkmode external -extldflags=-Wl,-soname,lib$(notdir $@).so.0' \
 		-o $(DST_LIBS)/$(notdir $@).so ./$@
 	@mv -f $(DST_LIBS)/$(notdir $@).so $(DST_LIBS)/lib$(notdir $@).so.$(CAPIVER)
 	cd $(DST_LIBS) && ln -sfn lib$(notdir $@).so.$(CAPIVER) lib$(notdir $@).so

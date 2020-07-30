@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"stash.kopano.io/kc/libkustomer" //nolint:goimports // False positive.
-	"stash.kopano.io/kc/libkustomer/version"
+	"stash.kopano.io/kc/libkustomer/internal/version"
 )
 
 // This module uses a global state, to track initialization per process. The

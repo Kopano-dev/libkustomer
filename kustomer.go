@@ -22,7 +22,7 @@ import (
 	"github.com/longsleep/sse"
 	api "stash.kopano.io/kgol/kustomer/server/api-v1"
 
-	"stash.kopano.io/kc/libkustomer/version"
+	"stash.kopano.io/kc/libkustomer/internal/version"
 )
 
 // A Kustomer is the representation of the Kustomer interface.
