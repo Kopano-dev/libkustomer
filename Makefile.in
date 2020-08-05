@@ -96,7 +96,7 @@ $(CMDS): vendor generate ; $(info building $@ ...) @
 		-o bin/$(notdir $@) ./$@
 
 .PHONY: $(LIBS)
-$(LIBS): vendor generate | $(DST_BIN) $(DST_LIBS) $(DST_HDRS); $(info building C libs $@ ...) @
+$(LIBS): vendor generate | $(DST_BIN) $(DST_LIBS) $(DST_HDRS) ; $(info building C libs $@ ...) @
 	CGO_ENABLED=1 $(GO) build \
 		-mod=vendor \
 		-tags release \
@@ -246,7 +246,7 @@ uninstall: ; $(info uninstalling ...)
 	rm -f  $(DESTDIR)$(libdir)/pkgconfig/libkustomer.pc
 	rm -f $(DESTDIR)$(libdir)/$(notdir $(CLIBS))
 	rm -f $(DESTDIR)$(libdir)/$(SHAREDLIB)
-	rm -f $(DESTDIR)$(includedir)/$(notdir $(CDEPS))
+	rm -f $(DESTDIR)$(includedir)/$(notdir $(CHDRS))
 
 # Rest
 
