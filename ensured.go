@@ -341,9 +341,17 @@ func (kpc *KopanoProductClaims) GetStringArrayValues(product, claim string) ([]s
 		return nil, err
 	}
 
-	tv, ok := v.([]string)
+	tvi, ok := v.([]interface{})
 	if !ok {
 		return nil, ErrEnsureProductClaimValueTypeMismatch
+	}
+	tv := make([]string, len(tvi))
+	for i, iv := range tvi {
+		if s, iok := iv.(string); iok {
+			tv[i] = s
+		} else {
+			return nil, ErrEnsureProductClaimValueTypeMismatch
+		}
 	}
 	return tv, nil
 }
