@@ -60,6 +60,7 @@ TIMEOUT  = 30
 
 # Build
 LDFLAGS  ?=
+EXTLDFLAGS ?=
 ASMFLAGS ?=
 GCFLAGS  ?=
 
@@ -104,7 +105,7 @@ $(LIBS): vendor generate | $(DST_BIN) $(DST_LIBS) $(DST_HDRS) ; $(info building 
 		-buildmode=c-shared \
 		-asmflags '$(ASMFLAGS)' \
 		-gcflags '$(GCFLAGS)' \
-		-ldflags '$(LDFLAGS) -buildid=reproducible/$(VERSION) -X $(PACKAGE)/internal/version.Version=$(VERSION) -X $(PACKAGE)/internal/version.BuildDate=$(DATE) -linkmode external -extldflags=-Wl,-soname,lib$(notdir $@).so.0' \
+		-ldflags '$(LDFLAGS) -buildid=reproducible/$(VERSION) -X $(PACKAGE)/internal/version.Version=$(VERSION) -X $(PACKAGE)/internal/version.BuildDate=$(DATE) -linkmode external "-extldflags=-Wl,-soname,lib$(notdir $@).so.0 $(EXTLDFLAGS)"' \
 		-o $(DST_LIBS)/$(notdir $@).so ./$@
 	@mv -f $(DST_LIBS)/$(notdir $@).so $(DST_LIBS)/lib$(notdir $@).so.$(CAPIVER)
 	cd $(DST_LIBS) && ln -sfn lib$(notdir $@).so.$(CAPIVER) lib$(notdir $@).so
