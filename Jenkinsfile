@@ -35,7 +35,7 @@ pipeline {
 		stage('Build') {
 			steps {
 				echo 'Building..'
-				sh 'make DATE=reproducible'
+				sh 'make DATE=reproducible LDFLAGS="" EXTLDFLAGS="$(DEB_BUILD_MAINT_OPTIONS=hardening=+all dpkg-buildflags --get LDFLAGS)"'
 				sh 'find ./.libs -type f -exec sha256sum {} \\;'
 				sh 'make examples'
 			}
