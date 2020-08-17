@@ -231,7 +231,7 @@ dist: utils licenses ; $(info building dist tarball ...)
 
 .PHONY: install
 install: lib ; $(info installing ...)
-	@mkdir -p $(DESTDIR)$(libdir)
+	@mkdir -p $(DESTDIR)$(libdir)/pkgconfig
 	@mkdir -p $(DESTDIR)$(includedir)
 	cp -af libkustomer.pc $(DESTDIR)$(libdir)/pkgconfig
 	cp -af $(CLIBS) $(DESTDIR)$(libdir)
