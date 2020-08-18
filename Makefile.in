@@ -21,7 +21,7 @@ DST_LIBS ?= ./.libs
 DST_HDRS ?= ./.libs/include/kustomer
 CC       ?= @CC@
 CXX      ?= @CXX@
-CFLAGS   ?= -I$(DST_HDRS)
+CFLAGS   := $(CFLAGS) -I$(DST_HDRS)
 
 PYTHON ?= @PYTHON@
 PHPIZE ?= @PHPIZE@
