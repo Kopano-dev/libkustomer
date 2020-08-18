@@ -34,4 +34,6 @@ AC_PATH_PROG([GO2XUNIT],[go2xunit])
 AC_PATH_PROGS([PYTHON],[python3 python python2],[python])
 AC_PATH_PROGS([PHPIZE],[phpize phpize7.4 phpize7.3 phpize7.2 phpize7.1 phpize7.0],[phpize])
 
+AC_PATH_PROG([GITCHGLOG],[git-chglog],[git-chglog])
+
 AC_OUTPUT(Makefile)

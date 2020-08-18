@@ -26,6 +26,8 @@ CFLAGS   ?= -I$(DST_HDRS)
 PYTHON ?= @PYTHON@
 PHPIZE ?= @PHPIZE@
 
+CHGLOG ?= @GITCHGLOG@
+
 # Cgo
 
 CGO_ENABLED ?= 0
@@ -44,6 +46,7 @@ SHAREDLIBV=libkustomer.so.0
 export CGO_ENABLED GO111MODULE
 unexport GOPATH
 
+ARGS    ?=
 PWD     := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 DATE    ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 VERSION ?= $(shell git describe --tags --always --dirty --match=v* 2>/dev/null | sed 's/^v//' || \
@@ -227,6 +230,10 @@ dist: utils licenses ; $(info building dist tarball ...)
 	ln -s $(SHAREDLIBV) "${PACKAGE_NAME}-${VERSION}"/$(SHAREDLIB) && \
 	tar --owner=0 --group=0 -czvf ${PACKAGE_NAME}-${VERSION}.tar.gz "${PACKAGE_NAME}-${VERSION}" && \
 	cd ..
+
+.PHONY: changelog
+changelog: ; $(info updating changelog ...)
+	$(CHGLOG) --output CHANGELOG.md $(ARGS)
 
 # Install
 
