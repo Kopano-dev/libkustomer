@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+
+
+## v0.6.3 (2020-08-18)
+
+- Add changelog support
 - Build with all hardening flags turned on
 
 
