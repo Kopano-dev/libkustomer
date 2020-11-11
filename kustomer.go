@@ -194,6 +194,7 @@ func (k *Kustomer) Initialize(ctx context.Context, productName *string) error {
 					case <-initializeCtx.Done():
 						return
 					case <-time.After(5 * time.Second):
+						first = true // Ensures to trigger after successful reconnect.
 						// breaks
 						break retry
 					}
