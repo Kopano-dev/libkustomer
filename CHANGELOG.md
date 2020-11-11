@@ -4,6 +4,12 @@
 
 
 
+## v0.6.4 (2020-11-11)
+
+- Trigger notification hook after reconnect
+- Keep our CFLAGS even when set in environment
+
+
 ## v0.6.3 (2020-08-18)
 
 - Add changelog support
