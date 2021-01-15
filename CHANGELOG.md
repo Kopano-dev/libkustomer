@@ -4,6 +4,11 @@
 
 
 
+## v0.7.0 (2021-01-15)
+
+- Make library API usable as Go module
+
+
 ## v0.6.4 (2020-11-11)
 
 - Trigger notification hook after reconnect
