@@ -31,17 +31,18 @@ import (
 
 	"github.com/mattn/go-pointer"
 
-	"stash.kopano.io/kc/libkustomer"
+	kustomer "stash.kopano.io/kc/libkustomer"
+	"stash.kopano.io/kc/libkustomer/lib/kustomer/libkustomer"
 )
 
 //export kustomer_version
 func kustomer_version() *C.char {
-	return C.CString(Version())
+	return C.CString(libkustomer.Version())
 }
 
 //export kustomer_build_date
 func kustomer_build_date() *C.char {
-	return C.CString(BuildDate())
+	return C.CString(libkustomer.BuildDate())
 }
 
 //export kustomer_set_autorefresh
@@ -50,7 +51,7 @@ func kustomer_set_autorefresh(flagCInt C.int) C.ulonglong {
 	if flagCInt != 0 {
 		flag = true
 	}
-	err := SetAutoRefresh(flag)
+	err := libkustomer.SetAutoRefresh(flag)
 	if err != nil {
 		return asKnownErrorOrUnknown(err)
 	}
@@ -69,7 +70,7 @@ func kustomer_set_logger(cb C.kustomer_cb_func_log_s, debug C.int) C.ulonglong {
 		}
 		flag = &f
 	}
-	err := SetLogger(logger, flag)
+	err := libkustomer.SetLogger(logger, flag)
 	if err != nil {
 		return asKnownErrorOrUnknown(err)
 	}
@@ -85,7 +86,7 @@ func kustomer_set_productuseragent(productUserAgentCString *C.char) C.ulonglong 
 		productUserAgent = &productUserAgentString
 	}
 
-	err := SetProductUserAgent(productUserAgent)
+	err := libkustomer.SetProductUserAgent(productUserAgent)
 	if err != nil {
 		return asKnownErrorOrUnknown(err)
 	}
@@ -101,7 +102,7 @@ func kustomer_initialize(productNameCString *C.char) C.ulonglong {
 		productName = &productNameString
 	}
 
-	err := Initialize(context.Background(), productName)
+	err := libkustomer.Initialize(context.Background(), productName)
 	if err != nil {
 		return asKnownErrorOrUnknown(err)
 	}
@@ -111,7 +112,7 @@ func kustomer_initialize(productNameCString *C.char) C.ulonglong {
 
 //export kustomer_uninitialize
 func kustomer_uninitialize() C.ulonglong {
-	err := Uninitialize()
+	err := libkustomer.Uninitialize()
 	if err != nil {
 		return asKnownErrorOrUnknown(err)
 	}
@@ -120,7 +121,7 @@ func kustomer_uninitialize() C.ulonglong {
 
 //export kustomer_wait_until_ready
 func kustomer_wait_until_ready(timeout C.ulonglong) C.ulonglong {
-	err := WaitUntilReady(time.Duration(timeout) * time.Second)
+	err := libkustomer.WaitUntilReady(time.Duration(timeout) * time.Second)
 	if err != nil {
 		return asKnownErrorOrUnknown(err)
 	}
@@ -129,7 +130,7 @@ func kustomer_wait_until_ready(timeout C.ulonglong) C.ulonglong {
 
 //export kustomer_set_notify_when_updated
 func kustomer_set_notify_when_updated(updateCb, exitCb C.kustomer_cb_func_watch) C.ulonglong {
-	err := SetNotifyWhenUpdated(func() {
+	err := libkustomer.SetNotifyWhenUpdated(func() {
 		if updateCb != nil {
 			C.bridge_kustomer_watch_cb_func_updated(updateCb)
 		}
@@ -146,7 +147,7 @@ func kustomer_set_notify_when_updated(updateCb, exitCb C.kustomer_cb_func_watch)
 
 //export kustomer_unset_notify_when_updated
 func kustomer_unset_notify_when_updated() C.ulonglong {
-	err := UnsetNotifyWhenUpdated()
+	err := libkustomer.UnsetNotifyWhenUpdated()
 	if err != nil {
 		return asKnownErrorOrUnknown(err)
 	}
@@ -155,7 +156,7 @@ func kustomer_unset_notify_when_updated() C.ulonglong {
 
 //export kustomer_dump_claims
 func kustomer_dump_claims() (C.ulonglong, *C.char) {
-	claims, err := CurrentClaims()
+	claims, err := libkustomer.CurrentClaims()
 	if err != nil {
 		return asKnownErrorOrUnknown(err), nil
 	}
@@ -171,12 +172,12 @@ func kustomer_dump_claims() (C.ulonglong, *C.char) {
 //export kustomer_err_numeric_text
 func kustomer_err_numeric_text(errNum C.ulonglong) *C.char {
 	err := asErrNumeric(errNum)
-	return C.CString(ErrNumericText(err))
+	return C.CString(libkustomer.ErrNumericText(err))
 }
 
 //export kustomer_begin_ensure
 func kustomer_begin_ensure() (statusNum C.ulonglong, transactionPtr unsafe.Pointer) {
-	kpc, err := CurrentKopanoProductClaims()
+	kpc, err := libkustomer.CurrentKopanoProductClaims()
 	if err != nil {
 		return asKnownErrorOrUnknown(err), nil
 	}
@@ -199,7 +200,7 @@ func kustomer_instant_ensure(productNameCString, productUserAgentCString *C.char
 		productUserAgent = &productUserAgentString
 	}
 
-	kpc, err := InstantEnsure(context.Background(), productName, productUserAgent, time.Duration(timeout)*time.Second)
+	kpc, err := libkustomer.InstantEnsure(context.Background(), productName, productUserAgent, time.Duration(timeout)*time.Second)
 	if err != nil {
 		return asKnownErrorOrUnknown(err), nil
 	}

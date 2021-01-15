@@ -54,7 +54,7 @@ VERSION ?= $(shell git describe --tags --always --dirty --match=v* 2>/dev/null |
 PKGS     = $(or $(PKG),$(shell $(GO) list -mod=readonly ./... | grep -v "^$(PACKAGE)/vendor/"))
 TESTPKGS = $(shell $(GO) list -mod=readonly -f '{{ if or .TestGoFiles .XTestGoFiles }}{{ .ImportPath }}{{ end }}' $(PKGS) 2>/dev/null)
 CMDS     = $(or $(CMD),$(addprefix cmd/,$(notdir $(shell find "$(PWD)/cmd/" -type d))))
-LIBS     = $(addprefix lib/,$(notdir $(shell find "$(PWD)/lib/" -type d)))
+LIBS     = $(addprefix lib/,$(notdir $(shell find "$(PWD)/lib/" -mindepth 1 -maxdepth 1 -type d)))
 HDRS     = $(shell find "$(PWD)/lib/" -name "*.h")
 CAPIVER := 0
 CLIBS    = $(addprefix $(DST_LIBS)/lib,$(addsuffix .so.$(CAPIVER),$(notdir $(LIBS))))
